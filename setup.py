@@ -322,8 +322,3 @@ setup(
    
 )
 
-
- 
-
-
->>>>>>> EQTransformer/master
