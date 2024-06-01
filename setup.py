@@ -257,7 +257,6 @@ setup(
     author="Tri Dao, Albert Gu",
     author_email="tri@tridao.me, agu@cs.cmu.edu",
     description="Mamba state-space model",
-    long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/state-spaces/mamba",
     classifiers=[
