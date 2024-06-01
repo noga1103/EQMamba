@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Copyright (c) 2023, Albert Gu, Tri Dao.
 import sys
 import warnings
@@ -283,7 +283,7 @@ setup(
         # "causal_conv1d>=1.2.0",
     ],
 )
-=======
+
 from setuptools import setup, find_packages
 
 with open("README.md", "r") as fh:
