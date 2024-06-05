@@ -2540,7 +2540,7 @@ class SeqSelfAttention(keras.layers.Layer):
     def _call_additive_emission(self, inputs):
         input_shape = K.shape(inputs)
         batch_size = input_shape[0]
-        input_len = inputs.get_shape().as_list()[1]
+        input_len = input_shape[1]
 
         # h_{t, t'} = \tanh(x_t^T W_t + x_{t'}^T W_x + b_h)
         q = K.expand_dims(K.dot(inputs, self.Wt), 2)
@@ -2552,11 +2552,11 @@ class SeqSelfAttention(keras.layers.Layer):
 
         # e_{t, t'} = W_a h_{t, t'} + b_a
         if self.use_attention_bias:
-            e = K.reshape(K.dot(h, self.Wa) + self.ba, (batch_size, input_len, input_len))
+            e = K.reshape(K.dot(h, self.Wa) + self.ba, (-1, input_len, input_len))
         else:
-            e = K.reshape(K.dot(h, self.Wa), (batch_size, input_len, input_len))
+            e = K.reshape(K.dot(h, self.Wa), (-1, input_len, input_len))
         return e
-
+    
     def _call_multiplicative_emission(self, inputs):
         # e_{t, t'} = x_t^T W_a x_{t'} + b_a
         e = K.batch_dot(K.dot(inputs, self.Wa), K.permute_dimensions(inputs, (0, 2, 1)))
