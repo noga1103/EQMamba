@@ -96,7 +96,7 @@ if not SKIP_CUDA_BUILD:
 
     check_if_cuda_home_none(PACKAGE_NAME)
     # Check, if CUDA11 is installed for compute capability 8.0
-    ccc_flag = [
+    cc_flag = [
     "-gencode", "arch=compute_80,code=sm_80"
 ]
     if CUDA_HOME is not None:
