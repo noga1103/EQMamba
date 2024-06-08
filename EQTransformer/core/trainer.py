@@ -662,7 +662,7 @@ def _document_training(history, model, start_training, end_training, save_dir, s
         
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
-    plt.grid(b=True, which='major', color='#666666', linestyle='-')
+    plt.grid(visible=True, which='major', color='#666666', linestyle='-')
     fig.savefig(os.path.join(save_dir,str('X_learning_curve_loss.png'))) 
        
     fig = plt.figure()
@@ -679,7 +679,7 @@ def _document_training(history, model, start_training, end_training, save_dir, s
         ax.legend(['detector_f1', 'picker_P_f1', 'picker_S_f1'], loc='lower right')        
     plt.ylabel('F1')
     plt.xlabel('Epoch')
-    plt.grid(b=True, which='major', color='#666666', linestyle='-')
+    plt.grid(visible=True, which='major', color='#666666', linestyle='-')
     fig.savefig(os.path.join(save_dir,str('X_learning_curve_f1.png'))) 
 
     delta = end_training - start_training
