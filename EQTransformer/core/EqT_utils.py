@@ -78,10 +78,14 @@ class MambaSSM(Layer):
         
     def call(self, x, delta, B, C, D):
         # Compute the hidden states using the Mamba SSM equations
-        h = tf.scan(lambda h_prev, x_t: tf.matmul(x_t, B) + tf.matmul(h_prev, tf.exp(delta * self.A)), x, initializer=tf.zeros((self.units,)))
+        # Transpose B to match the shape of x_t
+        B_t = K.permute_dimensions(B, (0, 2, 1))
+        h = tf.scan(lambda h_prev, x_t: tf.matmul(x_t, B_t) + tf.matmul(h_prev, tf.exp(delta * self.A)), x, initializer=tf.zeros((tf.shape(x)[0], self.units)))
         
+        # Transpose C to match the shape of h
+        C_t = K.permute_dimensions(C, (0, 2, 1))
         # Compute the output
-        y = tf.matmul(h, C) + tf.matmul(x, D)
+        y = tf.matmul(h, C_t) + tf.matmul(x, D)
         
         return y
       
