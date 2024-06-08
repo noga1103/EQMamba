@@ -67,7 +67,7 @@ class MambaBlock(Layer):
         
         return attention_weights
 
-class MambaSSM(Layer):
+
 class MambaSSM(Layer):
     def __init__(self, units, **kwargs):
         super(MambaSSM, self).__init__(**kwargs)
