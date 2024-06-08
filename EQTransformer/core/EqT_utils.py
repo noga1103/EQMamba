@@ -7,6 +7,8 @@ Created on Wed Jul 24 19:16:51 2019
 last update: 06/06/2020
 """
 from __future__ import division, print_function
+import tensorflow as tf
+from tensorflow.keras.layers import Layer
 import numpy as np
 import h5py
 import matplotlib
