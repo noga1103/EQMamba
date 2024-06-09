@@ -27,9 +27,9 @@ import matplotlib
 from tensorflow.python.util import deprecation
 deprecation._PRINT_DEPRECATION_WARNINGS = False
 
-class MambaBlock(Layer):
+class _mamba_block(Layer):
     def __init__(self, filters, attention_width=None, name=None, **kwargs):
-        super(MambaBlock, self).__init__(name=name, **kwargs)
+        super(_mamba_block, self).__init__(name=name, **kwargs)
         self.filters = filters
         self.attention_width = attention_width
         
@@ -2748,9 +2748,9 @@ def _lr_schedule(epoch):
     return lr
 
 
-class MambaBlock(Layer):
+class _mamba_block(Layer):
     def __init__(self, filters, attention_width=None, name=None, **kwargs):
-        super(MambaBlock, self).__init__(name=name, **kwargs)
+        super(_mamba_block, self).__init__(name=name, **kwargs)
         self.filters = filters
         self.attention_width = attention_width
         
@@ -2910,7 +2910,7 @@ class cred2():
 
 
         PLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=self.drop_rate, recurrent_dropout=self.drop_rate)(encoded)
-        norm_layerP, weightdP = MambaBlock(self.nb_filters[1], attention_width=3, name='mambaP')(PLSTM)
+        norm_layerP, weightdP = _mamba_block(self.nb_filters[1], attention_width=3, name='mambaP')(PLSTM)
         
         decoder_P = _decoder([i for i in reversed(self.nb_filters)], 
                             [i for i in reversed(self.kernel_size)], 
@@ -2924,7 +2924,7 @@ class cred2():
         P = Conv1D(1, 11, padding=self.padding, activation='sigmoid', name='picker_P')(decoder_P)
         
         SLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=self.drop_rate, recurrent_dropout=self.drop_rate)(encoded) 
-        norm_layerS, weightdS = MambaBlock(self.nb_filters[1], attention_width=3, name='mambaS')(SLSTM)
+        norm_layerS, weightdS = _mamba_block(self.nb_filters[1], attention_width=3, name='mambaS')(SLSTM)
         
         
         decoder_S = _decoder([i for i in reversed(self.nb_filters)], 
