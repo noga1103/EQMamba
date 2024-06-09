@@ -2748,23 +2748,45 @@ def _lr_schedule(epoch):
     return lr
 
 
-def _mamba_block(filters, drop_rate, width, name, inpC):
-    ' Returns a Mamba block containing selective attention and feed-forward layers with residual connections '
-    x = inpC
-
-    # Selective attention layer
-    att_layer = MambaBlock(filters, attention_width=width, name=name)(x)
-
-    att_layer2 = add([x, att_layer])
-    norm_layer = LayerNormalization()(att_layer2)
-
-    # Feed-forward layer
-    FF = FeedForward(units=filters, dropout_rate=drop_rate)(norm_layer)
-
-    FF_add = add([norm_layer, FF])
-    norm_out = LayerNormalization()(FF_add)
-
-    return norm_out
+class MambaBlock(Layer):
+    def __init__(self, filters, attention_width=None, name=None, **kwargs):
+        super(MambaBlock, self).__init__(name=name, **kwargs)
+        self.filters = filters
+        self.attention_width = attention_width
+        
+    def build(self, input_shape):
+        self.conv1d = Conv1D(filters=self.filters, kernel_size=1, padding='same')
+        self.norm = LayerNormalization()
+        self.mambaSSM = MambaSSM(self.filters)
+        
+    def call(self, x):
+        # Compute ∆ B C D, the state space parameters
+        state_space_params = self.conv1d(x)
+        state_space_params = self.norm(state_space_params)
+        
+        # Split the parameters into ∆, B, C, and D
+        delta, B, C, D = tf.split(state_space_params, num_or_size_splits=4, axis=-1)
+        
+        # Compute the Mamba SSM output
+        y = self.mambaSSM(x, delta, B, C, D)
+        
+        # Compute the attention weights
+        attention_weights = self.compute_attention_weights(x, y)
+        
+        return y, attention_weights
+    
+    def compute_attention_weights(self, x, y):
+        # Compute the attention weights using the Mamba SSM output and input
+        attention_scores = tf.matmul(x, y, transpose_b=True)
+        attention_weights = tf.nn.softmax(attention_scores, axis=-1)
+        
+        if self.attention_width is not None:
+            # Apply local attention masking
+            attention_mask = tf.linalg.band_part(tf.ones_like(attention_weights), self.attention_width, self.attention_width)
+            attention_weights = attention_weights * attention_mask
+            attention_weights = attention_weights / tf.reduce_sum(attention_weights, axis=-1, keepdims=True)
+        
+        return attention_weights
 
 class cred2():
     
