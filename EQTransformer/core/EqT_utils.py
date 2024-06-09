@@ -66,25 +66,19 @@ class MambaBlock(Layer):
             attention_weights = attention_weights / tf.reduce_sum(attention_weights, axis=-1, keepdims=True)
         
         return attention_weights
-
+        
 class MambaSSM(Layer):
     def __init__(self, units, **kwargs):
         super(MambaSSM, self).__init__(**kwargs)
         self.units = units
 
     def build(self, input_shape):
-        self.A = self.add_weight(shape=(self.units, self.units), initializer='glorot_uniform', trainable=True)
+        self.A = self.add_weight(shape=(input_shape[-1], self.units), initializer='glorot_uniform', trainable=True)
 
     def call(self, x, delta, B, C, D):
-        # Swap the last two dimensions of B
-        B = tf.transpose(B, perm=[0, 2, 1])
-
         # Compute the hidden states using the Mamba SSM equations
         h = tf.scan(lambda h_prev, x_t: tf.matmul(x_t, B) + tf.matmul(h_prev, tf.exp(delta * self.A)),
                     x, initializer=tf.zeros((tf.shape(x)[0], self.units)))
-
-        # Swap the last two dimensions of C
-        C = tf.transpose(C, perm=[0, 2, 1])
 
         # Compute the output
         y = tf.matmul(h, C) + tf.matmul(x, D)
@@ -2757,20 +2751,20 @@ def _lr_schedule(epoch):
 def _mamba_block(filters, drop_rate, width, name, inpC):
     ' Returns a Mamba block containing selective attention and feed-forward layers with residual connections '
     x = inpC
-    
+
     # Selective attention layer
-    att_layer, weight = MambaBlock(filters, attention_width=width, name=name)(x)
-    
-    att_layer2 = add([x, att_layer])    
+    att_layer = MambaBlock(filters, attention_width=width, name=name)(x)
+
+    att_layer2 = add([x, att_layer])
     norm_layer = LayerNormalization()(att_layer2)
-    
+
     # Feed-forward layer
-    FF = FeedForward(units=128, dropout_rate=drop_rate)(norm_layer)
-    
-    FF_add = add([norm_layer, FF])    
+    FF = FeedForward(units=filters, dropout_rate=drop_rate)(norm_layer)
+
+    FF_add = add([norm_layer, FF])
     norm_out = LayerNormalization()(FF_add)
-    
-    return norm_out, weight
+
+    return norm_out
 
 class cred2():
     
