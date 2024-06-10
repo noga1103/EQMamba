@@ -73,12 +73,15 @@ class MambaSSM(Layer):
         self.units = units
 
     def build(self, input_shape):
-        self.A = self.add_weight(shape=(input_shape[-1], self.units), initializer='glorot_uniform', trainable=True)
+        self.A = self.add_weight(shape=(self.units, self.units), initializer='glorot_uniform', trainable=True)
 
     def call(self, x, delta, B, C, D):
         # Compute the hidden states using the Mamba SSM equations
         h = tf.scan(lambda h_prev, x_t: tf.matmul(x_t, B) + tf.matmul(h_prev, tf.exp(delta * self.A)),
-                    x, initializer=tf.zeros((tf.shape(x)[0], self.units)))
+                    tf.transpose(x, [1, 0, 2]), initializer=tf.zeros((tf.shape(x)[0], self.units)))
+
+        # Transpose the hidden states back to the original shape
+        h = tf.transpose(h, [1, 0, 2])
 
         # Compute the output
         y = tf.matmul(h, C) + tf.matmul(x, D)
