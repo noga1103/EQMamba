@@ -26,25 +26,27 @@ from obspy.signal.trigger import trigger_onset
 import matplotlib
 from tensorflow.python.util import deprecation
 deprecation._PRINT_DEPRECATION_WARNINGS = False
-
 class MambaSSM(Layer):
     def __init__(self, units, **kwargs):
         super(MambaSSM, self).__init__(**kwargs)
         self.units = units
 
     def build(self, input_shape):
-        self.A = self.add_weight(shape=(self.units, self.units), initializer='glorot_uniform', trainable=True)
+        self.A = self.add_weight(shape=(input_shape[-1], self.units), initializer='glorot_uniform', trainable=True)
+        self.B = self.add_weight(shape=(input_shape[-1], self.units), initializer='glorot_uniform', trainable=True)
+        self.C = self.add_weight(shape=(self.units, self.units), initializer='glorot_uniform', trainable=True)
+        self.D = self.add_weight(shape=(input_shape[-1], self.units), initializer='glorot_uniform', trainable=True)
 
-    def call(self, x, delta, B, C, D):
+    def call(self, x, delta):
         # Compute the hidden states using the Mamba SSM equations
-        h = tf.scan(lambda h_prev, x_t: tf.matmul(x_t, B) + tf.matmul(h_prev, tf.exp(delta * self.A)),
+        h = tf.scan(lambda h_prev, x_t: tf.matmul(x_t, self.B) + tf.matmul(h_prev, tf.exp(delta * self.A)),
                     tf.transpose(x, [1, 0, 2]), initializer=tf.zeros((tf.shape(x)[0], self.units)))
 
         # Transpose the hidden states back to the original shape
         h = tf.transpose(h, [1, 0, 2])
 
         # Compute the output
-        y = tf.matmul(h, C) + tf.matmul(x, D)
+        y = tf.matmul(h, self.C) + tf.matmul(x, self.D)
 
         return y
 
@@ -55,31 +57,17 @@ class MambaBlock(Layer):
         self.attention_width = attention_width
         
     def build(self, input_shape):
-        self.conv1d_delta = Conv1D(filters=self.filters, kernel_size=1, padding='same')
-        self.conv1d_B = Conv1D(filters=self.filters, kernel_size=1, padding='same')
-        self.conv1d_C = Conv1D(filters=self.filters, kernel_size=1, padding='same')
-        self.conv1d_D = Conv1D(filters=self.filters, kernel_size=1, padding='same')
+        self.conv1d_delta = Conv1D(filters=input_shape[-1], kernel_size=1, padding='same')
         self.norm_delta = LayerNormalization()
-        self.norm_B = LayerNormalization()
-        self.norm_C = LayerNormalization()
-        self.norm_D = LayerNormalization()
         self.mambaSSM = MambaSSM(self.filters)
         
     def call(self, x):
-        # Compute ∆, B, C, D, the state space parameters
+        # Compute ∆, the state space parameter
         delta = self.conv1d_delta(x)
-        B = self.conv1d_B(x)
-        C = self.conv1d_C(x)
-        D = self.conv1d_D(x)
-        
-        # Normalize the state space parameters
         delta = self.norm_delta(delta)
-        B = self.norm_B(B)
-        C = self.norm_C(C)
-        D = self.norm_D(D)
         
         # Compute the Mamba SSM output
-        y = self.mambaSSM(x, delta, B, C, D)
+        y = self.mambaSSM(x, delta)
         
         # Compute the attention weights
         attention_weights = self.compute_attention_weights(x, y)
@@ -98,7 +86,6 @@ class MambaBlock(Layer):
             attention_weights = attention_weights / tf.reduce_sum(attention_weights, axis=-1, keepdims=True)
         
         return attention_weights
-
       
 class DataGenerator(keras.utils.Sequence):
     
