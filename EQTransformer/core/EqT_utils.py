@@ -26,20 +26,21 @@ from obspy.signal.trigger import trigger_onset
 import matplotlib
 from tensorflow.python.util import deprecation
 deprecation._PRINT_DEPRECATION_WARNINGS = False
+
 class MambaSSM(Layer):
     def __init__(self, units, **kwargs):
         super(MambaSSM, self).__init__(**kwargs)
         self.units = units
 
     def build(self, input_shape):
-        self.A = self.add_weight(shape=(input_shape[-1], self.units), initializer='glorot_uniform', trainable=True)
+        self.A = self.add_weight(shape=(input_shape[-1], input_shape[-1]), initializer='glorot_uniform', trainable=True)
         self.B = self.add_weight(shape=(input_shape[-1], self.units), initializer='glorot_uniform', trainable=True)
-        self.C = self.add_weight(shape=(self.units, self.units), initializer='glorot_uniform', trainable=True)
-        self.D = self.add_weight(shape=(input_shape[-1], self.units), initializer='glorot_uniform', trainable=True)
+        self.C = self.add_weight(shape=(self.units, input_shape[-1]), initializer='glorot_uniform', trainable=True)
+        self.D = self.add_weight(shape=(input_shape[-1], input_shape[-1]), initializer='glorot_uniform', trainable=True)
 
     def call(self, x, delta):
         # Compute the hidden states using the Mamba SSM equations
-        h = tf.scan(lambda h_prev, x_t: tf.matmul(x_t, self.B) + tf.matmul(h_prev, tf.exp(delta * self.A)),
+        h = tf.scan(lambda h_prev, x_t: tf.matmul(x_t, self.B) + tf.matmul(h_prev, tf.exp(tf.matmul(delta, self.A))),
                     tf.transpose(x, [1, 0, 2]), initializer=tf.zeros((tf.shape(x)[0], self.units)))
 
         # Transpose the hidden states back to the original shape
