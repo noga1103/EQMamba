@@ -56,10 +56,13 @@ class MambaBlock(Layer):
         
     def build(self, input_shape):
         self.conv1d_delta = Conv1D(filters=self.filters, kernel_size=1, padding='same')
-        self.conv1d_B = Conv1D(filters=input_shape[-1], kernel_size=1, padding='same')
+        self.conv1d_B = Conv1D(filters=self.filters, kernel_size=1, padding='same')
         self.conv1d_C = Conv1D(filters=self.filters, kernel_size=1, padding='same')
         self.conv1d_D = Conv1D(filters=self.filters, kernel_size=1, padding='same')
-        self.norm = LayerNormalization()
+        self.norm_delta = LayerNormalization()
+        self.norm_B = LayerNormalization()
+        self.norm_C = LayerNormalization()
+        self.norm_D = LayerNormalization()
         self.mambaSSM = MambaSSM(self.filters)
         
     def call(self, x):
@@ -70,10 +73,10 @@ class MambaBlock(Layer):
         D = self.conv1d_D(x)
         
         # Normalize the state space parameters
-        delta = self.norm(delta)
-        B = self.norm(B)
-        C = self.norm(C)
-        D = self.norm(D)
+        delta = self.norm_delta(delta)
+        B = self.norm_B(B)
+        C = self.norm_C(C)
+        D = self.norm_D(D)
         
         # Compute the Mamba SSM output
         y = self.mambaSSM(x, delta, B, C, D)
