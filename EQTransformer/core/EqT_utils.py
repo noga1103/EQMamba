@@ -2748,12 +2748,12 @@ def _lr_schedule(epoch):
     return lr
 
 
-def _mamba_block(filters, drop_rate, width, name, inpC):
+def _mamba_block(filters, drop_rate, attention_width, name, inpC):
     ' Returns a Mamba block containing selective attention and feed-forward layers with residual connections '
     x = inpC
 
     # Selective attention layer
-    att_layer = MambaBlock(filters, attention_width=width, name=name)(x)
+    att_layer, attention_weights = MambaBlock(filters, attention_width=attention_width, name=name)(x)
 
     att_layer2 = add([x, att_layer])
     norm_layer = LayerNormalization()(att_layer2)
@@ -2764,7 +2764,7 @@ def _mamba_block(filters, drop_rate, width, name, inpC):
     FF_add = add([norm_layer, FF])
     norm_out = LayerNormalization()(FF_add)
 
-    return norm_out
+    return norm_out, attention_weights
 
 class cred2():
     
@@ -2872,9 +2872,10 @@ class cred2():
             x = _block_BiLSTM(self.nb_filters[1], self.drop_rate, self.padding, x)
 
             
-        x, weightdD0 = _mamba_block(self.nb_filters[6], self.drop_rate, None, 'mambaD0', x)             
-        encoded, weightdD = _mamba_block(self.nb_filters[6], self.drop_rate, None, 'mambaD', x)             
-            
+        x, weightdD0 = _mamba_block(self.nb_filters[6], self.drop_rate, None, 'mambaD0', x)
+        encoded, weightdD = _mamba_block(self.nb_filters[6], self.drop_rate, None, 'mambaD', x)
+
+        
         decoder_D = _decoder([i for i in reversed(self.nb_filters)], 
                              [i for i in reversed(self.kernel_size)], 
                              self.decoder_depth, 
