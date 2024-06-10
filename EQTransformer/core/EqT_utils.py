@@ -34,7 +34,7 @@ class MambaBlock(Layer):
         self.attention_width = attention_width
         
     def build(self, input_shape):
-        self.conv1d = Conv1D(filters=self.filters, kernel_size=1, padding='same')
+        self.conv1d = Conv1D(filters=self.filters * 4, kernel_size=1, padding='same')
         self.norm = LayerNormalization()
         self.mambaSSM = MambaSSM(self.filters)
         
@@ -2890,7 +2890,7 @@ class cred2():
 
 
         PLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=self.drop_rate, recurrent_dropout=self.drop_rate)(encoded)
-        norm_layerP, weightdP = MambaBlock(self.nb_filters[1], attention_width=3, name='mambaP')(PLSTM)
+        norm_layerP, weightdP = _mamba_block(self.nb_filters[1], self.drop_rate, 3, 'mambaP', PLSTM)
         
         decoder_P = _decoder([i for i in reversed(self.nb_filters)], 
                             [i for i in reversed(self.kernel_size)], 
@@ -2903,8 +2903,8 @@ class cred2():
                             norm_layerP)
         P = Conv1D(1, 11, padding=self.padding, activation='sigmoid', name='picker_P')(decoder_P)
         
-        SLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=self.drop_rate, recurrent_dropout=self.drop_rate)(encoded) 
-        norm_layerS, weightdS = MambaBlock(self.nb_filters[1], attention_width=3, name='mambaS')(SLSTM)
+        SLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=self.drop_rate, recurrent_dropout=self.drop_rate)(encoded)
+        norm_layerS, weightdS = _mamba_block(self.nb_filters[1], self.drop_rate, 3, 'mambaS', SLSTM)
         
         
         decoder_S = _decoder([i for i in reversed(self.nb_filters)], 
