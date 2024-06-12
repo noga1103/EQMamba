@@ -2948,7 +2948,7 @@ class cred2():
         self.BiLSTM_blocks= BiLSTM_blocks     
         self.drop_rate= drop_rate
         self.loss_weights= loss_weights  
-        self.loss_types = loss_types       
+        self.loss_types = ['binary_crossentropy', 'binary_crossentropy', 'binary_crossentropy']
         self.kernel_regularizer = kernel_regularizer     
         self.bias_regularizer = bias_regularizer 
         self.model_args = ModelArgs(
