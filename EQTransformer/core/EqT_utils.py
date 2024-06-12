@@ -336,7 +336,10 @@ class DataGenerator(keras.utils.Sequence):
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             additions = None
-            dataset = fl.get('data/'+str(ID))
+            if 'data/'+str(ID) in fl:
+                del fl['data/'+str(ID)]  # Delete the existing dataset
+
+            dataset = fl.create_dataset('data/'+str(ID), data=data, overwrite=True)
 
             if ID.split('_')[-1] == 'EV':
                 data = np.array(dataset)                    
