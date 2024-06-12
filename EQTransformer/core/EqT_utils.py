@@ -3036,7 +3036,7 @@ class cred2():
         model = Model(inputs=inp, outputs=[d, P, S])
         tf.keras.backend.clear_session()
         model.compile(loss=dict(zip(['detector_output', 'picker_P', 'picker_S'], ['binary_crossentropy', 'binary_crossentropy', 'binary_crossentropy'])),
-        loss_weights=dict(zip(['detector_output', 'picker_P', 'picker_S'], loss_weights)),
+        loss_weights=dict(zip(['detector_output', 'picker_P', 'picker_S'], [0.2, 0.3, 0.5])),
         optimizer=Adam(lr=_lr_schedule(0)), metrics={'detector_output': f1, 'picker_P': f1, 'picker_S': f1})
 
         return model
