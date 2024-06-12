@@ -2295,6 +2295,24 @@ class ModelArgs:
         
         if self.layer_id == -1:
             self.layer_id = np.round(np.random.randint(0, 1000), 4)
+    def get_config(self):
+    config = {
+        'model_input_dims': self.model_input_dims,
+        'model_states': self.model_states,
+        'projection_expand_factor': self.projection_expand_factor,
+        'conv_kernel_size': self.conv_kernel_size,
+        'delta_t_min': self.delta_t_min,
+        'delta_t_max': self.delta_t_max,
+        'delta_t_scale': self.delta_t_scale,
+        'delta_t_init_floor': self.delta_t_init_floor,
+        'conv_use_bias': self.conv_use_bias,
+        'dense_use_bias': self.dense_use_bias,
+        'layer_id': self.layer_id,
+        'seq_length': self.seq_length,
+        'num_layers': self.num_layers,
+        'vocab_size': self.vocab_size
+    }
+    return config
   
 class LayerNormalization(keras.layers.Layer):
     
