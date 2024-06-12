@@ -16,6 +16,7 @@ import os
 os.environ['KERAS_BACKEND']='tensorflow'
 from tensorflow import keras
 from tensorflow.keras import backend as K
+from tensorflow.keras import layers  
 from tensorflow.keras.layers import add, Activation, LSTM, Conv1D, InputSpec
 from tensorflow.keras.layers import MaxPooling1D, UpSampling1D, Cropping1D, SpatialDropout1D, Bidirectional, BatchNormalization 
 from tensorflow.keras.models import Model
