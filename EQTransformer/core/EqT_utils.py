@@ -340,7 +340,6 @@ class DataGenerator(keras.utils.Sequence):
             dataset = fl.get('data/'+str(ID))
     
             if dataset is None:
-                print(f"Dataset 'data/{ID}' doesn't exist. Skipping.")
                 continue
     
             data = np.array(dataset)
