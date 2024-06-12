@@ -1707,6 +1707,13 @@ class ResidualBlock(keras.layers.Layer):
     def call(self, x):
         return self.mixer(self.norm(x)) + x
 
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            "modelargs": self.args,
+        })
+        return config
+
 
 class DataGeneratorPrediction(keras.utils.Sequence):
     
@@ -2972,7 +2979,8 @@ class cred2():
                              encoded)
         d = Conv1D(1, 11, padding = self.padding, activation='sigmoid', name='detector')(decoder_D)
 
-        PLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=self.drop_rate, recurrent_dropout=self.drop_rate)(encoded)
+
+        PLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=0, recurrent_dropout=0,activation='tanh', recurrent_activation='sigmoid', unroll=False)(encoded)
         norm_layerP, weightdP = SeqSelfAttention(return_attention=True,
                                                  attention_width=3,
                                                  name='attentionP')(PLSTM)
@@ -2988,7 +2996,7 @@ class cred2():
                             norm_layerP)
         P = Conv1D(1, 11, padding = self.padding, activation='sigmoid', name='picker_P')(decoder_P)
 
-        SLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=self.drop_rate, recurrent_dropout=self.drop_rate)(encoded)
+        SLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=0, recurrent_dropout=0,activation='tanh', recurrent_activation='sigmoid', unroll=False)(encoded)
         norm_layerS, weightdS = SeqSelfAttention(return_attention=True,
                                                  attention_width=3,
                                                  name='attentionS')(SLSTM)
