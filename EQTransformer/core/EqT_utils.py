@@ -332,7 +332,7 @@ class DataGenerator(keras.utils.Sequence):
         y1 = np.zeros((self.batch_size, self.dim, 1))
         y2 = np.zeros((self.batch_size, self.dim, 1))
         y3 = np.zeros((self.batch_size, self.dim, 1))
-        fl = h5py.File(self.file_name, 'a')
+        fl = h5py.File(self.file_name, 'r')
     
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
@@ -351,11 +351,6 @@ class DataGenerator(keras.utils.Sequence):
                 coda_end = int(dataset.attrs['coda_end_sample'])
                 snr = dataset.attrs['snr_db']
     
-            # Rest of the data generation code...
-    
-     
-
-
            
             ## augmentation 
             if self.augmentation == True:                 
