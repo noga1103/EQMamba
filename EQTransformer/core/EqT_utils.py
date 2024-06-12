@@ -1611,7 +1611,26 @@ class DataGeneratorTest(keras.utils.Sequence):
         fl.close() 
                            
         return X
-
+        
+def selective_scan(u, delta, A, B, C, D):
+    # first step of A_bar = exp(ΔA), i.e., ΔA
+    dA = tf.einsum('bld,dn->bldn', delta, A)
+    dB_u = tf.einsum('bld,bld,bln->bldn', delta, u, B)
+    dA_cumsum = tf.pad(
+        dA[:, 1:], [[0, 0], [1, 1], [0, 0], [0, 0]])[:, 1:, :, :]
+    dA_cumsum = tf.reverse(dA_cumsum, axis=[1]) # Flip along axis 1
+    # Cumulative sum along all the input tokens, parallel prefix sum,
+    # calculates dA for all the input tokens parallely
+    dA_cumsum = tf.math.cumsum(dA_cumsum, axis=1)
+    # second step of A_bar = exp(ΔA), i.e., exp(ΔA)
+    dA_cumsum = tf.exp(dA_cumsum)
+    dA_cumsum = tf.reverse(dA_cumsum, axis=[1]) # Flip back along axis 1
+    x = dB_u * dA_cumsum
+    # 1e-12 to avoid division by 0
+    x = tf.math.cumsum(x, axis=1)/(dA_cumsum + 1e-12)
+    y = tf.einsum('bldn,bln->bld', x, C)
+    return y + u * D
+    
 class MambaBlock(layers.Layer):
     def __init__(self, modelargs, *args, **kwargs):
         super().__init__(*args, **kwargs)
