@@ -2671,22 +2671,26 @@ class SeqSelfAttention(keras.layers.Layer):
         input_shape = K.shape(inputs)
         batch_size = input_shape[0]
         input_len = inputs.get_shape().as_list()[1]
-
-        # h_{t, t'} = \tanh(x_t^T W_t + x_{t'}^T W_x + b_h)
+        
+        # Fallback to the dynamic shape if input_len is None
+        if input_len is None:
+            input_len = tf.shape(inputs)[1]
+    
+        # h_{t, t'} = \\tanh(x_t^T W_t + x_{t'}^T W_x + b_h)
         q = K.expand_dims(K.dot(inputs, self.Wt), 2)
         k = K.expand_dims(K.dot(inputs, self.Wx), 1)
         if self.use_additive_bias:
             h = K.tanh(q + k + self.bh)
         else:
             h = K.tanh(q + k)
-
+    
         # e_{t, t'} = W_a h_{t, t'} + b_a
         if self.use_attention_bias:
             e = K.reshape(K.dot(h, self.Wa) + self.ba, (batch_size, input_len, input_len))
         else:
             e = K.reshape(K.dot(h, self.Wa), (batch_size, input_len, input_len))
         return e
-
+        
     def _call_multiplicative_emission(self, inputs):
         # e_{t, t'} = x_t^T W_a x_{t'} + b_a
         e = K.batch_dot(K.dot(inputs, self.Wa), K.permute_dimensions(inputs, (0, 2, 1)))
