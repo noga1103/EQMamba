@@ -1612,6 +1612,77 @@ class DataGeneratorTest(keras.utils.Sequence):
                            
         return X
 
+class MambaBlock(layers.Layer):
+    def __init__(self, modelargs, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.args = modelargs
+        args = modelargs
+        self.layer_id = modelargs.layer_id
+        self.in_projection = layers.Dense(
+            args.model_internal_dim * 2,
+            input_shape=(args.model_input_dims,), use_bias=False)
+        self.conv1d = layers.Conv1D(
+            filters=args.model_internal_dim,
+            use_bias=args.conv_use_bias,
+            kernel_size=args.conv_kernel_size,
+            groups=args.model_internal_dim,
+            data_format='channels_first',
+            padding='causal'
+        )
+        self.x_projection = layers.Dense(args.delta_t_rank + args.model_states * 2, use_bias=False)
+        self.delta_t_projection = layers.Dense(args.model_internal_dim,
+                                               input_shape=(args.delta_t_rank,), use_bias=False)
+        self.A = tf.repeat(
+            tf.range(1, args.model_states+1, dtype=tf.float32),
+            'n -> d n', d=args.model_internal_dim)
+        self.A_log = tf.Variable(
+            tf.math.log(self.A),
+            trainable=True, dtype=tf.float32,
+            name=f"SSM_A_log_{args.layer_id}")
+        self.D = tf.Variable(
+            np.ones(args.model_internal_dim),
+            trainable=True, dtype=tf.float32,
+            name=f"SSM_D_{args.layer_id}")
+        self.out_projection = layers.Dense(
+            args.model_input_dims,
+            input_shape=(args.model_internal_dim,),
+            use_bias=args.dense_use_bias)
+
+    def call(self, x):
+        batch_size, seq_len, dimension = x.shape
+        x_and_res = self.in_projection(x)
+        x, res = tf.split(x_and_res,
+                          [self.args.model_internal_dim,
+                           self.args.model_internal_dim], axis=-1)
+        x = tf.transpose(x, [0, 2, 1])
+        x = self.conv1d(x)[:, :, :seq_len]
+        x = tf.transpose(x, [0, 2, 1])
+        x = tf.nn.swish(x)
+        y = self.ssm(x)
+        y = y * tf.nn.swish(res)
+        return self.out_projection(y)
+
+    def ssm(self, x):
+        d_in, n = self.A_log.shape
+        A = -tf.exp(tf.cast(self.A_log, tf.float32))
+        D = tf.cast(self.D, tf.float32)
+        x_dbl = self.x_projection(x)
+        delta, B, C = tf.split(
+            x_dbl,
+            num_or_size_splits=[self.args.delta_t_rank, n, n],
+            axis=-1)
+        delta = tf.nn.softplus(self.delta_t_projection(delta))
+        return selective_scan(x, delta, A, B, C, D)
+
+class ResidualBlock(layers.Layer):
+    def __init__(self, modelargs, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.args = modelargs
+        self.mixer = MambaBlock(modelargs)
+        self.norm = layers.LayerNormalization(epsilon=1e-5)
+
+    def call(self, x):
+        return self.mixer(self.norm(x)) + x
 
 
 class DataGeneratorPrediction(keras.utils.Sequence):
@@ -2351,7 +2422,7 @@ class FeedForward(keras.layers.Layer):
         return y
 
 
-class SeqSelfAttention(keras.layers.Layer):
+class SeqSelfAttention(keras.layers.Layer): 
     """Layer initialization. modified from https://github.com/CyberZHG
     For additive attention, see: https://arxiv.org/pdf/1806.01264.pdf
     :param units: The dimension of the vectors that used to calculate the attention weights.
@@ -2743,6 +2814,8 @@ class cred2():
         
     """
 
+    
+class cred2():
     def __init__(self,
                  nb_filters=[8, 16, 16, 32, 32, 96, 96, 128],
                  kernel_size=[11, 9, 7, 7, 5, 5, 3, 3],
@@ -2757,8 +2830,21 @@ class cred2():
                  loss_types=['binary_crossentropy', 'binary_crossentropy', 'binary_crossentropy'],                                 
                  kernel_regularizer=keras.regularizers.l1(1e-4),
                  bias_regularizer=keras.regularizers.l1(1e-4),
-                 ):
-        
+                 model_input_dims=64,
+                 model_states=64,
+                 projection_expand_factor=2,
+                 conv_kernel_size=4,
+                 delta_t_min=0.001,
+                 delta_t_max=0.1,
+                 delta_t_scale=0.1,
+                 delta_t_init_floor=1e-4,
+                 conv_use_bias=True,
+                 dense_use_bias=False,
+                 layer_id=-1,
+                 seq_length=6000,
+                 num_layers=5,
+                 vocab_size=None):
+
         self.kernel_size = kernel_size
         self.nb_filters = nb_filters
         self.padding = padding
@@ -2772,10 +2858,24 @@ class cred2():
         self.loss_types = loss_types       
         self.kernel_regularizer = kernel_regularizer     
         self.bias_regularizer = bias_regularizer 
+        self.args = ModelArgs(
+            model_input_dims=model_input_dims,
+            model_states=model_states,
+            projection_expand_factor=projection_expand_factor,
+            conv_kernel_size=conv_kernel_size,
+            delta_t_min=delta_t_min,
+            delta_t_max=delta_t_max,
+            delta_t_scale=delta_t_scale,
+            delta_t_init_floor=delta_t_init_floor,
+            conv_use_bias=conv_use_bias,
+            dense_use_bias=dense_use_bias,
+            layer_id=layer_id,
+            seq_length=seq_length,
+            num_layers=num_layers,
+            vocab_size=vocab_size
+        )
 
-        
     def __call__(self, inp):
-
         x = inp
         x = _encoder(self.nb_filters, 
                     self.kernel_size, 
@@ -2795,10 +2895,9 @@ class cred2():
         for bb in range(self.BiLSTM_blocks):
             x = _block_BiLSTM(self.nb_filters[1], self.drop_rate, self.padding, x)
 
-            
-        x, weightdD0 = _transformer(self.drop_rate, None, 'attentionD0', x)             
-        encoded, weightdD = _transformer(self.drop_rate, None, 'attentionD', x)             
-            
+        x = ResidualBlock(self.args)(x)
+        encoded = ResidualBlock(self.args)(x)
+
         decoder_D = _decoder([i for i in reversed(self.nb_filters)], 
                              [i for i in reversed(self.kernel_size)], 
                              self.decoder_depth, 
@@ -2810,12 +2909,9 @@ class cred2():
                              encoded)
         d = Conv1D(1, 11, padding = self.padding, activation='sigmoid', name='detector')(decoder_D)
 
-
         PLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=self.drop_rate, recurrent_dropout=self.drop_rate)(encoded)
-        norm_layerP, weightdP = SeqSelfAttention(return_attention=True,
-                                                 attention_width= 3,
-                                                 name='attentionP')(PLSTM)
-        
+        norm_layerP = layers.LayerNormalization(epsilon=1e-5)(PLSTM)
+
         decoder_P = _decoder([i for i in reversed(self.nb_filters)], 
                             [i for i in reversed(self.kernel_size)], 
                             self.decoder_depth, 
@@ -2826,13 +2922,10 @@ class cred2():
                             self.padding,                            
                             norm_layerP)
         P = Conv1D(1, 11, padding = self.padding, activation='sigmoid', name='picker_P')(decoder_P)
-        
+
         SLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=self.drop_rate, recurrent_dropout=self.drop_rate)(encoded) 
-        norm_layerS, weightdS = SeqSelfAttention(return_attention=True,
-                                                 attention_width= 3,
-                                                 name='attentionS')(SLSTM)
-        
-        
+        norm_layerS = layers.LayerNormalization(epsilon=1e-5)(SLSTM)
+
         decoder_S = _decoder([i for i in reversed(self.nb_filters)], 
                             [i for i in reversed(self.kernel_size)],
                             self.decoder_depth, 
@@ -2842,9 +2935,8 @@ class cred2():
                             self.activationf, 
                             self.padding,                            
                             norm_layerS) 
-        
+
         S = Conv1D(1, 11, padding = self.padding, activation='sigmoid', name='picker_S')(decoder_S)
-        
 
         model = Model(inputs=inp, outputs=[d, P, S])
 
