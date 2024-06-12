@@ -1640,10 +1640,10 @@ class MambaBlock(keras.layers.Layer):
         self.args = modelargs
         args = modelargs
         self.layer_id = modelargs.layer_id
-        self.in_projection = keras.layers.Dense(
+        self.in_projection = layers.Dense(
             args.model_internal_dim * 2,
             input_shape=(args.model_input_dims,), use_bias=False)
-        self.conv1d = keras.layers.Conv1D(
+        self.conv1d = layers.Conv1D(
             filters=args.model_internal_dim,
             use_bias=args.conv_use_bias,
             kernel_size=args.conv_kernel_size,
@@ -1651,12 +1651,13 @@ class MambaBlock(keras.layers.Layer):
             data_format='channels_first',
             padding='causal'
         )
-        self.x_projection = keras.layers.Dense(args.delta_t_rank + args.model_states * 2, use_bias=False)
-        self.delta_t_projection = keras.layers.Dense(args.model_internal_dim,
+        self.x_projection = layers.Dense(args.delta_t_rank + args.model_states * 2, use_bias=False)
+        self.delta_t_projection = layers.Dense(args.model_internal_dim,
                                                input_shape=(args.delta_t_rank,), use_bias=False)
         self.A = tf.repeat(
             tf.range(1, args.model_states+1, dtype=tf.float32),
-            'n -> d n', d=args.model_internal_dim)
+            args.model_internal_dim, axis=0)  # Updated line
+        self.A = tf.reshape(self.A, (args.model_internal_dim, args.model_states))  # Reshape to match the desired shape
         self.A_log = tf.Variable(
             tf.math.log(self.A),
             trainable=True, dtype=tf.float32,
@@ -1665,7 +1666,7 @@ class MambaBlock(keras.layers.Layer):
             np.ones(args.model_internal_dim),
             trainable=True, dtype=tf.float32,
             name=f"SSM_D_{args.layer_id}")
-        self.out_projection = keras.layers.Dense(
+        self.out_projection = layers.Dense(
             args.model_input_dims,
             input_shape=(args.model_internal_dim,),
             use_bias=args.dense_use_bias)
