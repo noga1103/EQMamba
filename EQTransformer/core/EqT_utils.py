@@ -326,39 +326,34 @@ class DataGenerator(keras.utils.Sequence):
         return data
                     
     def __data_generation(self, list_IDs_temp):
-        'read the waveforms'         
+         
+        'read the waveforms'
         X = np.zeros((self.batch_size, self.dim, self.n_channels))
         y1 = np.zeros((self.batch_size, self.dim, 1))
         y2 = np.zeros((self.batch_size, self.dim, 1))
         y3 = np.zeros((self.batch_size, self.dim, 1))
-        fl = h5py.File(self.file_name, 'a') 
-       # Generate data
+        fl = h5py.File(self.file_name, 'a')
+    
+        # Generate data
         for i, ID in enumerate(list_IDs_temp):
             additions = None
-            if 'data/'+str(ID) in fl:
-                del fl['data/'+str(ID)]  # Delete the existing dataset
-            
-            # Load or generate the data for the current ID
-            if ID.split('_')[-1] == 'EV':
-                if 'data/'+str(ID) in fl:
-                    data = np.array(fl['data/'+str(ID)])  # Load data from the HDF5 file
-                    spt = int(fl['data/'+str(ID)].attrs['p_arrival_sample'])
-                    sst = int(fl['data/'+str(ID)].attrs['s_arrival_sample'])
-                    coda_end = int(fl['data/'+str(ID)].attrs['coda_end_sample'])
-                    snr = fl['data/'+str(ID)].attrs['snr_db']
-                else:
-                    print(f"Dataset 'data/{ID}' doesn't exist. Skipping.")
-                    continue
-            elif ID.split('_')[-1] == 'NO':
-                if 'data/'+str(ID) in fl:
-                    data = np.array(fl['data/'+str(ID)])  # Load data from the HDF5 file
-                else:
-                    print(f"Dataset 'data/{ID}' doesn't exist. Skipping.")
-                    continue
-            
-            # Create a new dataset with the loaded data
-            dataset = fl.create_dataset('data/'+str(ID), data=data)
+            dataset = fl.get('data/'+str(ID))
     
+            if dataset is None:
+                print(f"Dataset 'data/{ID}' doesn't exist. Skipping.")
+                continue
+    
+            data = np.array(dataset)
+    
+            if ID.split('_')[-1] == 'EV':
+                spt = int(dataset.attrs['p_arrival_sample'])
+                sst = int(dataset.attrs['s_arrival_sample'])
+                coda_end = int(dataset.attrs['coda_end_sample'])
+                snr = dataset.attrs['snr_db']
+    
+            # Rest of the data generation code...
+    
+     
 
 
            
