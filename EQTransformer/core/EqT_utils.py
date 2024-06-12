@@ -332,24 +332,26 @@ class DataGenerator(keras.utils.Sequence):
         y2 = np.zeros((self.batch_size, self.dim, 1))
         y3 = np.zeros((self.batch_size, self.dim, 1))
         fl = h5py.File(self.file_name, 'a') 
-
-
+       
         for i, ID in enumerate(list_IDs_temp):
             additions = None
             if 'data/'+str(ID) in fl:
                 del fl['data/'+str(ID)]  # Delete the existing dataset
-            dataset = fl.create_dataset('data/'+str(ID), data=data)
-        
-
+    
+            # Load or generate the data for the current ID
             if ID.split('_')[-1] == 'EV':
-                data = np.array(dataset)                    
-                spt = int(dataset.attrs['p_arrival_sample']);
-                sst = int(dataset.attrs['s_arrival_sample']);
-                coda_end = int(dataset.attrs['coda_end_sample']);
-                snr = dataset.attrs['snr_db'];
-                    
+                data = np.array(fl['data/'+str(ID)])  # Load data from the HDF5 file
+                spt = int(fl['data/'+str(ID)].attrs['p_arrival_sample'])
+                sst = int(fl['data/'+str(ID)].attrs['s_arrival_sample'])
+                coda_end = int(fl['data/'+str(ID)].attrs['coda_end_sample'])
+                snr = fl['data/'+str(ID)].attrs['snr_db']
             elif ID.split('_')[-1] == 'NO':
-                data = np.array(dataset)
+                data = np.array(fl['data/'+str(ID)])  # Load data from the HDF5 file
+    
+            # Create a new dataset with the loaded data
+            dataset = fl.create_dataset('data/'+str(ID), data=data)
+
+
            
             ## augmentation 
             if self.augmentation == True:                 
