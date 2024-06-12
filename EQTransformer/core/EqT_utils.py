@@ -15,6 +15,7 @@ matplotlib.use('agg')
 from tqdm import tqdm
 import os
 os.environ['KERAS_BACKEND']='tensorflow'
+import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import backend as K
 from tensorflow.keras import layers  
