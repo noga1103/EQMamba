@@ -1632,16 +1632,16 @@ def selective_scan(u, delta, A, B, C, D):
     y = tf.einsum('bldn,bln->bld', x, C)
     return y + u * D
     
-class MambaBlock(layers.Layer):
+class MambaBlock(keras.layers.Layer):
     def __init__(self, modelargs, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.args = modelargs
         args = modelargs
         self.layer_id = modelargs.layer_id
-        self.in_projection = layers.Dense(
+        self.in_projection = keras.layers.Dense(
             args.model_internal_dim * 2,
             input_shape=(args.model_input_dims,), use_bias=False)
-        self.conv1d = layers.Conv1D(
+        self.conv1d = keras.layers.Conv1D(
             filters=args.model_internal_dim,
             use_bias=args.conv_use_bias,
             kernel_size=args.conv_kernel_size,
@@ -1649,8 +1649,8 @@ class MambaBlock(layers.Layer):
             data_format='channels_first',
             padding='causal'
         )
-        self.x_projection = layers.Dense(args.delta_t_rank + args.model_states * 2, use_bias=False)
-        self.delta_t_projection = layers.Dense(args.model_internal_dim,
+        self.x_projection = keras.layers.Dense(args.delta_t_rank + args.model_states * 2, use_bias=False)
+        self.delta_t_projection = keras.layers.Dense(args.model_internal_dim,
                                                input_shape=(args.delta_t_rank,), use_bias=False)
         self.A = tf.repeat(
             tf.range(1, args.model_states+1, dtype=tf.float32),
@@ -1663,7 +1663,7 @@ class MambaBlock(layers.Layer):
             np.ones(args.model_internal_dim),
             trainable=True, dtype=tf.float32,
             name=f"SSM_D_{args.layer_id}")
-        self.out_projection = layers.Dense(
+        self.out_projection = keras.layers.Dense(
             args.model_input_dims,
             input_shape=(args.model_internal_dim,),
             use_bias=args.dense_use_bias)
@@ -1694,12 +1694,12 @@ class MambaBlock(layers.Layer):
         delta = tf.nn.softplus(self.delta_t_projection(delta))
         return selective_scan(x, delta, A, B, C, D)
 
-class ResidualBlock(layers.Layer):
+class ResidualBlock(keras.layers.Layer):
     def __init__(self, modelargs, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.args = modelargs
         self.mixer = MambaBlock(modelargs)
-        self.norm = layers.LayerNormalization(epsilon=1e-5)
+        self.norm = keras.layers.LayerNormalization(epsilon=1e-5)
 
     def call(self, x):
         return self.mixer(self.norm(x)) + x
