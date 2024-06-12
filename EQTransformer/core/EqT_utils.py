@@ -2998,14 +2998,11 @@ class cred2():
                              self.activationf, 
                              self.padding,                             
                              encoded)
-        d = Conv1D(1, 11, padding = self.padding, activation='sigmoid', name='detector')(decoder_D)
+        d = Conv1D(1, 11, padding=self.padding, activation='sigmoid', name='detector_output')(decoder_D)
 
-
-        PLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=0, recurrent_dropout=0,activation='tanh', recurrent_activation='sigmoid', unroll=False)(encoded)
-        norm_layerP, weightdP = SeqSelfAttention(return_attention=True,
-                                                 attention_width=3,
-                                                 name='attentionP')(PLSTM)
-
+        PLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=0, recurrent_dropout=0, activation='tanh', recurrent_activation='sigmoid', unroll=False, name='PLSTM_layer')(encoded)
+        norm_layerP, weightdP = SeqSelfAttention(return_attention=True, attention_width=3, name='attention_P_layer')(PLSTM)
+        
         decoder_P = _decoder([i for i in reversed(self.nb_filters)], 
                             [i for i in reversed(self.kernel_size)], 
                             self.decoder_depth, 
