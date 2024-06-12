@@ -2253,7 +2253,7 @@ def normalize(data, mode='std'):
     
 class ModelArgs:
     def __init__(self,
-                 model_input_dims=64,
+                 model_input_dims=16,
                  model_states=64,
                  projection_expand_factor=2,
                  conv_kernel_size=4,
@@ -2889,7 +2889,7 @@ class cred2():
                  loss_types=['binary_crossentropy', 'binary_crossentropy', 'binary_crossentropy'],                                 
                  kernel_regularizer=keras.regularizers.l1(1e-4),
                  bias_regularizer=keras.regularizers.l1(1e-4),
-                 model_input_dims=64,
+                 model_input_dims=16,
                  model_states=64,
                  projection_expand_factor=2,
                  conv_kernel_size=4,
