@@ -3037,7 +3037,7 @@ class cred2():
 
         model = Model(inputs=inp, outputs=[d, P, S])
 
-       model.compile(loss={'detector_output': self.loss_types[0],
+        model.compile(loss={'detector_output': self.loss_types[0],
                     'picker_P': self.loss_types[1],
                     'picker_S': self.loss_types[2]},
               loss_weights={'detector_output': self.loss_weights[0],
