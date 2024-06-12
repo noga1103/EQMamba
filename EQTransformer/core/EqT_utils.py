@@ -332,24 +332,33 @@ class DataGenerator(keras.utils.Sequence):
         y2 = np.zeros((self.batch_size, self.dim, 1))
         y3 = np.zeros((self.batch_size, self.dim, 1))
         fl = h5py.File(self.file_name, 'a') 
-       
+       # Generate data
         for i, ID in enumerate(list_IDs_temp):
             additions = None
             if 'data/'+str(ID) in fl:
                 del fl['data/'+str(ID)]  # Delete the existing dataset
-    
+            
             # Load or generate the data for the current ID
             if ID.split('_')[-1] == 'EV':
-                data = np.array(fl['data/'+str(ID)])  # Load data from the HDF5 file
-                spt = int(fl['data/'+str(ID)].attrs['p_arrival_sample'])
-                sst = int(fl['data/'+str(ID)].attrs['s_arrival_sample'])
-                coda_end = int(fl['data/'+str(ID)].attrs['coda_end_sample'])
-                snr = fl['data/'+str(ID)].attrs['snr_db']
+                if 'data/'+str(ID) in fl:
+                    data = np.array(fl['data/'+str(ID)])  # Load data from the HDF5 file
+                    spt = int(fl['data/'+str(ID)].attrs['p_arrival_sample'])
+                    sst = int(fl['data/'+str(ID)].attrs['s_arrival_sample'])
+                    coda_end = int(fl['data/'+str(ID)].attrs['coda_end_sample'])
+                    snr = fl['data/'+str(ID)].attrs['snr_db']
+                else:
+                    print(f"Dataset 'data/{ID}' doesn't exist. Skipping.")
+                    continue
             elif ID.split('_')[-1] == 'NO':
-                data = np.array(fl['data/'+str(ID)])  # Load data from the HDF5 file
-    
+                if 'data/'+str(ID) in fl:
+                    data = np.array(fl['data/'+str(ID)])  # Load data from the HDF5 file
+                else:
+                    print(f"Dataset 'data/{ID}' doesn't exist. Skipping.")
+                    continue
+            
             # Create a new dataset with the loaded data
             dataset = fl.create_dataset('data/'+str(ID), data=data)
+    
 
 
            
