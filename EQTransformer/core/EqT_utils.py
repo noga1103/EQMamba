@@ -3035,7 +3035,7 @@ class cred2():
         S = Conv1D(1, 11, padding = self.padding, activation='sigmoid', name='picker_S')(decoder_S)
 
         model = Model(inputs=inp, outputs=[d, P, S])
-        tf.keras.backend.clear_session()
+      
         model.compile(loss=self.loss_types, loss_weights=self.loss_weights,
                       optimizer=Adam(lr=_lr_schedule(0)), metrics=[f1])
 
