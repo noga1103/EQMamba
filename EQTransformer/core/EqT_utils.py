@@ -332,7 +332,7 @@ class DataGenerator(keras.utils.Sequence):
         y1 = np.zeros((self.batch_size, self.dim, 1))
         y2 = np.zeros((self.batch_size, self.dim, 1))
         y3 = np.zeros((self.batch_size, self.dim, 1))
-        fl = h5py.File(self.file_name, 'r')
+        fl = h5py.File(self.file_name, 'a', driver='filelock')
     
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
