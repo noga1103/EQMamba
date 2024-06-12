@@ -2228,7 +2228,43 @@ def normalize(data, mode='std'):
     return data
     
     
-
+class ModelArgs:
+    def __init__(self,
+                 model_input_dims=64,
+                 model_states=64,
+                 projection_expand_factor=2,
+                 conv_kernel_size=4,
+                 delta_t_min=0.001,
+                 delta_t_max=0.1,
+                 delta_t_scale=0.1,
+                 delta_t_init_floor=1e-4,
+                 conv_use_bias=True,
+                 dense_use_bias=False,
+                 layer_id=-1,
+                 seq_length=6000,
+                 num_layers=5,
+                 vocab_size=None):
+        
+        self.model_input_dims = model_input_dims
+        self.model_states = model_states
+        self.projection_expand_factor = projection_expand_factor
+        self.conv_kernel_size = conv_kernel_size
+        self.delta_t_min = delta_t_min
+        self.delta_t_max = delta_t_max
+        self.delta_t_scale = delta_t_scale
+        self.delta_t_init_floor = delta_t_init_floor
+        self.conv_use_bias = conv_use_bias
+        self.dense_use_bias = dense_use_bias
+        self.layer_id = layer_id
+        self.seq_length = seq_length
+        self.num_layers = num_layers
+        self.vocab_size = vocab_size
+        
+        self.model_internal_dim = int(self.projection_expand_factor * self.model_input_dims)
+        self.delta_t_rank = math.ceil(self.model_input_dims / 16)
+        
+        if self.layer_id == -1:
+            self.layer_id = np.round(np.random.randint(0, 1000), 4)
   
 class LayerNormalization(keras.layers.Layer):
     
@@ -2858,7 +2894,7 @@ class cred2():
         self.loss_types = loss_types       
         self.kernel_regularizer = kernel_regularizer     
         self.bias_regularizer = bias_regularizer 
-        self.args = ModelArgs(
+        self.model_args = ModelArgs(
             model_input_dims=model_input_dims,
             model_states=model_states,
             projection_expand_factor=projection_expand_factor,
@@ -2895,8 +2931,8 @@ class cred2():
         for bb in range(self.BiLSTM_blocks):
             x = _block_BiLSTM(self.nb_filters[1], self.drop_rate, self.padding, x)
 
-        x = ResidualBlock(self.args)(x)
-        encoded = ResidualBlock(self.args)(x)
+        x = ResidualBlock(self.model_args)(x)
+        encoded = ResidualBlock(self.model_args)(x)
 
         decoder_D = _decoder([i for i in reversed(self.nb_filters)], 
                              [i for i in reversed(self.kernel_size)], 
@@ -2910,7 +2946,9 @@ class cred2():
         d = Conv1D(1, 11, padding = self.padding, activation='sigmoid', name='detector')(decoder_D)
 
         PLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=self.drop_rate, recurrent_dropout=self.drop_rate)(encoded)
-        norm_layerP = layers.LayerNormalization(epsilon=1e-5)(PLSTM)
+        norm_layerP, weightdP = SeqSelfAttention(return_attention=True,
+                                                 attention_width=3,
+                                                 name='attentionP')(PLSTM)
 
         decoder_P = _decoder([i for i in reversed(self.nb_filters)], 
                             [i for i in reversed(self.kernel_size)], 
@@ -2923,8 +2961,10 @@ class cred2():
                             norm_layerP)
         P = Conv1D(1, 11, padding = self.padding, activation='sigmoid', name='picker_P')(decoder_P)
 
-        SLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=self.drop_rate, recurrent_dropout=self.drop_rate)(encoded) 
-        norm_layerS = layers.LayerNormalization(epsilon=1e-5)(SLSTM)
+        SLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=self.drop_rate, recurrent_dropout=self.drop_rate)(encoded)
+        norm_layerS, weightdS = SeqSelfAttention(return_attention=True,
+                                                 attention_width=3,
+                                                 name='attentionS')(SLSTM)
 
         decoder_S = _decoder([i for i in reversed(self.nb_filters)], 
                             [i for i in reversed(self.kernel_size)],
@@ -2940,8 +2980,8 @@ class cred2():
 
         model = Model(inputs=inp, outputs=[d, P, S])
 
-        model.compile(loss=self.loss_types, loss_weights=self.loss_weights,    
-            optimizer=Adam(lr=_lr_schedule(0)), metrics=[f1])
+        model.compile(loss=self.loss_types, loss_weights=self.loss_weights,
+                      optimizer=Adam(lr=_lr_schedule(0)), metrics=[f1])
 
         return model
 
