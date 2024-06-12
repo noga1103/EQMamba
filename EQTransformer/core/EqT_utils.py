@@ -2907,6 +2907,8 @@ class cred2():
 
     
 class cred2():
+
+    
     def __init__(self,
                  nb_filters=[8, 16, 16, 32, 32, 96, 96, 128],
                  kernel_size=[11, 9, 7, 7, 5, 5, 3, 3],
@@ -3032,9 +3034,10 @@ class cred2():
         S = Conv1D(1, 11, padding = self.padding, activation='sigmoid', name='picker_S')(decoder_S)
 
         model = Model(inputs=inp, outputs=[d, P, S])
-      
-        model.compile(loss=self.loss_types, loss_weights=self.loss_weights,
-                      optimizer=Adam(lr=_lr_schedule(0)), metrics=[f1])
+        tf.keras.backend.clear_session()
+        model.compile(loss=dict(zip(['detector_output', 'picker_P', 'picker_S'], loss_types)),
+        loss_weights=dict(zip(['detector_output', 'picker_P', 'picker_S'], loss_weights)),
+        optimizer=Adam(lr=_lr_schedule(0)), metrics={'detector_output': f1, 'picker_P': f1, 'picker_S': f1})
 
         return model
 
