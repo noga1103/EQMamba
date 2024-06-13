@@ -338,15 +338,17 @@ class DataGenerator(keras.utils.Sequence):
     
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
-            additions = None
-            timestamp = int(time.time())
-            dataset_name = f'data/{ID}_{timestamp}'
-            fl.create_dataset(dataset_name, data=data)
+           additions = None
+            dataset = fl.get('data/'+str(ID))  # Retrieve the dataset using the ID
     
             if dataset is None:
                 continue
     
-            data = np.array(dataset)
+            data = np.array(dataset)  # Assign the value of dataset to data
+    
+            timestamp = int(time.time())
+            dataset_name = f'data/{ID}_{timestamp}'
+            fl.create_dataset(dataset_name, data=data)
     
             if ID.split('_')[-1] == 'EV':
                 spt = int(dataset.attrs['p_arrival_sample'])
