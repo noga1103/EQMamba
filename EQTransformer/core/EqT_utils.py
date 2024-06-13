@@ -559,7 +559,7 @@ class DataGenerator(keras.utils.Sequence):
                         if add_sst:
                             y3[i, add_sst-20:add_sst+20, 0] = 1                 
 
-        fl.close() 
+            fl.close() 
                            
         return X, y1.astype('float32'), y2.astype('float32'), y3.astype('float32')
 
