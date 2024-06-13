@@ -224,7 +224,7 @@ def preprocessor(preproc_dir, mseed_dir, stations_json, overlap=0.3, n_processor
 
                     if 'data/'+tr_name in HDF:
                     # Dataset already exists, delete it
-                    del HDF['data/'+tr_name]
+                        del HDF['data/'+tr_name]
 
                     dsF = HDF.create_dataset('data/'+tr_name, npz_data.shape, data = npz_data, dtype= np.float32)       
                        
