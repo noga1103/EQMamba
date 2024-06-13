@@ -10,6 +10,7 @@ from __future__ import division, print_function
 import math
 import numpy as np
 import h5py
+import uuid
 import matplotlib
 matplotlib.use('agg')
 from tqdm import tqdm
@@ -1639,6 +1640,8 @@ def selective_scan(u, delta, A, B, C, D):
     
 class MambaBlock(keras.layers.Layer):
     def __init__(self, modelargs, *args, **kwargs):
+        if name is None:
+            name = f'mamba_block_{str(uuid.uuid4())[:8]}'
         super().__init__(*args, **kwargs)
         self.args = modelargs
         args = modelargs
@@ -2354,7 +2357,7 @@ class LayerNormalization(keras.layers.Layer):
                  gamma_initializer='ones',
                  beta_initializer='zeros',
                  **kwargs):
-
+    
         super(LayerNormalization, self).__init__(**kwargs)
         self.supports_masking = True
         self.center = center
@@ -2966,6 +2969,7 @@ class cred2():
             seq_length=seq_length,
             num_layers=num_layers,
             vocab_size=vocab_size
+            name = str(uuid.uuid4())[:8]
         )
 
     def __call__(self, inp):
