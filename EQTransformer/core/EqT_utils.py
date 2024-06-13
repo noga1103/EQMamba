@@ -3036,13 +3036,14 @@ class cred2():
       
 
         model = Model(inputs=inp, outputs=[d, P, S])
-
-        model.compile(loss={'detector_output': self.loss_types[0],
-                    'picker_P': self.loss_types[1],
-                    'picker_S': self.loss_types[2]},
-              loss_weights={'detector_output': self.loss_weights[0],
-                            'picker_P': self.loss_weights[1],
-                            'picker_S': self.loss_weights[2]},
+        loss_weights=[0.2, 0.3, 0.5]
+        loss_types=['binary_crossentropy', 'binary_crossentropy', 'binary_crossentropy']
+        model.compile(loss={'detector_output': loss_types[0],
+                    'picker_P': loss_types[1],
+                    'picker_S': loss_types[2]},
+              loss_weights={'detector_output': loss_weights[0],
+                            'picker_P': loss_weights[1],
+                            'picker_S': loss_weights[2]},
               optimizer=Adam(lr=_lr_schedule(0)),
               metrics={'detector_output': f1,
                        'picker_P': f1,
