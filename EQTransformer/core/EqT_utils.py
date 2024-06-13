@@ -1640,8 +1640,6 @@ def selective_scan(u, delta, A, B, C, D):
     
 class MambaBlock(keras.layers.Layer):
     def __init__(self, modelargs, *args, **kwargs):
-        if name is None:
-            name = f'mamba_block_{str(uuid.uuid4())[:8]}'
         super().__init__(*args, **kwargs)
         self.args = modelargs
         args = modelargs
@@ -2968,7 +2966,7 @@ class cred2():
             layer_id=layer_id,
             seq_length=seq_length,
             num_layers=num_layers,
-            vocab_size=vocab_size
+            vocab_size=vocab_size,
             name = str(uuid.uuid4())[:8]
         )
 
