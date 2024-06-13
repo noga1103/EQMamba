@@ -327,7 +327,7 @@ class DataGenerator(keras.utils.Sequence):
             data[:, ch] = np.append(bpf[0], bpf[1:] - pre_emphasis * bpf[:-1])
         return data
                     
-   def __data_generation(self, list_IDs_temp):
+    def __data_generation(self, list_IDs_temp):
         'read the waveforms'         
         X = np.zeros((self.batch_size, self.dim, self.n_channels))
         y1 = np.zeros((self.batch_size, self.dim, 1))
