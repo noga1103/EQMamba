@@ -340,15 +340,16 @@ class DataGenerator(keras.utils.Sequence):
         for i, ID in enumerate(list_IDs_temp):
             additions = None
             dataset = fl.get('data/'+str(ID))  # Retrieve the dataset using the ID
-    
+            
             if dataset is None:
                 continue
-    
+            
             data = np.array(dataset)  # Assign the value of dataset to data
-    
+            
             timestamp = int(time.time())
             dataset_name = f'data/{ID}_{timestamp}'
-            fl.create_dataset(dataset_name, data=data)
+            dataset = fl.require_dataset(dataset_name, shape=data.shape, dtype=data.dtype, data=data)
+            
     
             if ID.split('_')[-1] == 'EV':
                 spt = int(dataset.attrs['p_arrival_sample'])
