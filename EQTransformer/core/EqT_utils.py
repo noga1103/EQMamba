@@ -3047,7 +3047,7 @@ class cred2():
                             'picker_P': self.loss_weights[1],
                             'picker_S': self.loss_weights[2]},
               optimizer=Adam(lr=_lr_schedule(0)),
-              metrics={'detector_output': f1,
+              metrics={'detector': f1,
                        'picker_P': f1,
                        'picker_S': f1})
         
