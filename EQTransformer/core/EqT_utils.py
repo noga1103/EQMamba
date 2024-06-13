@@ -381,12 +381,12 @@ class DataGenerator(keras.utils.Sequence):
             ## augmentation 
             if self.augmentation == True:                 
                 if i <= self.batch_size//2:   
-                    if self.shift_event_r and dataset.attrs['trace_category'] == 'earthquake_local':
+                    if 'trace_category' in dataset.attrs and self.shift_event_r and dataset.attrs['trace_category'] == 'earthquake_local':
                         data, spt, sst, coda_end = self._shift_event(data, spt, sst, coda_end, snr, self.shift_event_r/2);                                       
                     if self.norm_mode:                    
                         data = self._normalize(data, self.norm_mode)  
                 else:                  
-                    if dataset.attrs['trace_category'] == 'earthquake_local':                   
+                    if 'trace_category' in dataset.attrs and dataset.attrs['trace_category'] == 'earthquake_local':                   
                         if self.shift_event_r:
                             data, spt, sst, coda_end = self._shift_event(data, spt, sst, coda_end, snr, self.shift_event_r); 
                             
@@ -409,7 +409,7 @@ class DataGenerator(keras.utils.Sequence):
                         if self.norm_mode:    
                             data = self._normalize(data, self.norm_mode)                            
                                     
-                    elif dataset.attrs['trace_category'] == 'noise':
+                    elif 'trace_category' in dataset.attrs and dataset.attrs['trace_category'] == 'noise':
                         if self.drop_channe_r:    
                             data = self._drop_channel_noise(data, self.drop_channe_r);
                             
@@ -420,7 +420,7 @@ class DataGenerator(keras.utils.Sequence):
                             data = self._normalize(data, self.norm_mode) 
 
             elif self.augmentation == False:  
-                if self.shift_event_r and dataset.attrs['trace_category'] == 'earthquake_local':
+                if self.shift_event_r and 'trace_category' in dataset.attrs and dataset.attrs['trace_category'] == 'earthquake_local':
                     data, spt, sst, coda_end = self._shift_event(data, spt, sst, coda_end, snr, self.shift_event_r/2);                     
                 if self.norm_mode:                    
                     data = self._normalize(data, self.norm_mode)                          
@@ -428,7 +428,7 @@ class DataGenerator(keras.utils.Sequence):
             X[i, :, :] = data                                       
 
             ## labeling 
-            if dataset.attrs['trace_category'] == 'earthquake_local': 
+            if 'trace_category' in dataset.attrs and dataset.attrs['trace_category'] == 'earthquake_local': 
                 if self.label_type  == 'gaussian': 
                     sd = None    
                     if spt and sst: 
