@@ -338,7 +338,7 @@ class DataGenerator(keras.utils.Sequence):
     
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
-           additions = None
+            additions = None
             dataset = fl.get('data/'+str(ID))  # Retrieve the dataset using the ID
     
             if dataset is None:
