@@ -3000,7 +3000,7 @@ class cred2():
                              self.activationf, 
                              self.padding,                             
                              encoded)
-        d = Conv1D(1, 11, padding=self.padding, activation='sigmoid', name='detector_output')(decoder_D)
+        d = Conv1D(1, 11, padding=self.padding, activation='sigmoid', name='detector')(decoder_D)
 
         PLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=0, recurrent_dropout=0, activation='tanh', recurrent_activation='sigmoid', unroll=False, name='PLSTM_layer')(encoded)
         norm_layerP, weightdP = SeqSelfAttention(return_attention=True, attention_width=3, name='attention_P_layer')(PLSTM)
@@ -3039,13 +3039,13 @@ class cred2():
         loss_weights=[0.2, 0.3, 0.5]
         loss_types=['binary_crossentropy', 'binary_crossentropy', 'binary_crossentropy']
         print(loss_weights)
-        print(self.loss_weights)
-        model.compile(loss={'detector_output': loss_types[0],
-                    'picker_P': loss_types[1],
-                    'picker_S': loss_types[2]},
-              loss_weights={'detector_output': loss_weights[0],
-                            'picker_P': loss_weights[1],
-                            'picker_S': loss_weights[2]},
+        print(self.loss_types)
+        model.compile(loss={'detector': self.loss_types[0],
+                    'picker_P': self.loss_types[1],
+                    'picker_S': self.loss_types[2]},
+              loss_weights={'detector': self.loss_weights[0],
+                            'picker_P': self.loss_weights[1],
+                            'picker_S': self.loss_weights[2]},
               optimizer=Adam(lr=_lr_schedule(0)),
               metrics={'detector_output': f1,
                        'picker_P': f1,
