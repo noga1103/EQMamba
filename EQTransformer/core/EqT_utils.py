@@ -338,8 +338,12 @@ class DataGenerator(keras.utils.Sequence):
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             additions = None
+            
             dataset = fl.get('data/'+str(ID))
-
+            if dataset is None:
+                print(f"Dataset 'data/{ID}' not found in the file.")
+                continue
+                  
             if ID.split('_')[-1] == 'EV':
                 data = np.array(dataset)                    
                 spt = int(dataset.attrs['p_arrival_sample']);
@@ -1294,6 +1298,9 @@ def data_reader( list_IDs,
 
         additions = None
         dataset = fl.get('data/'+str(ID))
+        if dataset is None:
+            print(f"Dataset 'data/{ID}' not found in the file.")
+            continue
         
         if ID.split('_')[-1] == 'EV':            
             data = np.array(dataset)                    
@@ -1605,6 +1612,9 @@ class DataGeneratorTest(keras.utils.Sequence):
                     
             elif ID.split('_')[-1] == 'NO':
                 dataset = fl.get('data/'+str(ID))
+                if dataset is None:
+                    print(f"Dataset 'data/{ID}' not found in the file.")
+                    continue
                 data = np.array(dataset)
           
             if self.norm_mode:                    
@@ -1807,6 +1817,9 @@ class DataGeneratorPrediction(keras.utils.Sequence):
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             dataset = fl.get('data/'+str(ID))
+            if dataset is None:
+                print(f"Dataset 'data/{ID}' not found in the file.")
+                continue
             data = np.array(dataset)                
          
             if self.norm_mode:                    
