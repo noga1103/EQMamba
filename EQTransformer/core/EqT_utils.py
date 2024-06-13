@@ -327,66 +327,38 @@ class DataGenerator(keras.utils.Sequence):
             data[:, ch] = np.append(bpf[0], bpf[1:] - pre_emphasis * bpf[:-1])
         return data
                     
-    def __data_generation(self, list_IDs_temp):
-         
-        'read the waveforms'
+   def __data_generation(self, list_IDs_temp):
+        'read the waveforms'         
         X = np.zeros((self.batch_size, self.dim, self.n_channels))
         y1 = np.zeros((self.batch_size, self.dim, 1))
         y2 = np.zeros((self.batch_size, self.dim, 1))
         y3 = np.zeros((self.batch_size, self.dim, 1))
-        fl = h5py.File(self.file_name, 'r+')
-    
+        fl = h5py.File(self.file_name, 'r')
+
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             additions = None
-            dataset = fl.get('data/'+str(ID))  # Retrieve the dataset using the ID
-            
-            if dataset is None:
-                continue
-            
-            data = np.array(dataset)  # Assign the value of dataset to data
-            
-            timestamp = int(time.time())
-            dataset_name = f'data/{ID}_{timestamp}'
-            
-            if dataset_name in fl:
-                # Dataset already exists, retrieve the existing dataset
-                dataset = fl[dataset_name]
-            else:
-                # Dataset doesn't exist, create a new dataset
-                dataset = fl.create_dataset(dataset_name, shape=data.shape, dtype=data.dtype, data=data)
-            
+            dataset = fl.get('data/'+str(ID))
+
             if ID.split('_')[-1] == 'EV':
-                if 'p_arrival_sample' in dataset.attrs:
-                    spt = int(dataset.attrs['p_arrival_sample'])
-                else:
-                    spt = None  # or set a default value
-            
-                if 's_arrival_sample' in dataset.attrs:
-                    sst = int(dataset.attrs['s_arrival_sample'])
-                else:
-                    sst = None  # or set a default value
-            
-                if 'coda_end_sample' in dataset.attrs:
-                    coda_end = int(dataset.attrs['coda_end_sample'])
-                else:
-                    coda_end = None  # or set a default value
-            
-                if 'snr_db' in dataset.attrs:
-                    snr = dataset.attrs['snr_db']
-                else:
-                    snr = None
-    
+                data = np.array(dataset)                    
+                spt = int(dataset.attrs['p_arrival_sample']);
+                sst = int(dataset.attrs['s_arrival_sample']);
+                coda_end = int(dataset.attrs['coda_end_sample']);
+                snr = dataset.attrs['snr_db'];
+                    
+            elif ID.split('_')[-1] == 'NO':
+                data = np.array(dataset)
            
             ## augmentation 
             if self.augmentation == True:                 
                 if i <= self.batch_size//2:   
-                    if 'trace_category' in dataset.attrs and self.shift_event_r and dataset.attrs['trace_category'] == 'earthquake_local':
+                    if self.shift_event_r and dataset.attrs['trace_category'] == 'earthquake_local':
                         data, spt, sst, coda_end = self._shift_event(data, spt, sst, coda_end, snr, self.shift_event_r/2);                                       
                     if self.norm_mode:                    
                         data = self._normalize(data, self.norm_mode)  
                 else:                  
-                    if 'trace_category' in dataset.attrs and dataset.attrs['trace_category'] == 'earthquake_local':                   
+                    if dataset.attrs['trace_category'] == 'earthquake_local':                   
                         if self.shift_event_r:
                             data, spt, sst, coda_end = self._shift_event(data, spt, sst, coda_end, snr, self.shift_event_r); 
                             
@@ -409,7 +381,7 @@ class DataGenerator(keras.utils.Sequence):
                         if self.norm_mode:    
                             data = self._normalize(data, self.norm_mode)                            
                                     
-                    elif 'trace_category' in dataset.attrs and dataset.attrs['trace_category'] == 'noise':
+                    elif dataset.attrs['trace_category'] == 'noise':
                         if self.drop_channe_r:    
                             data = self._drop_channel_noise(data, self.drop_channe_r);
                             
@@ -420,7 +392,7 @@ class DataGenerator(keras.utils.Sequence):
                             data = self._normalize(data, self.norm_mode) 
 
             elif self.augmentation == False:  
-                if self.shift_event_r and 'trace_category' in dataset.attrs and dataset.attrs['trace_category'] == 'earthquake_local':
+                if self.shift_event_r and dataset.attrs['trace_category'] == 'earthquake_local':
                     data, spt, sst, coda_end = self._shift_event(data, spt, sst, coda_end, snr, self.shift_event_r/2);                     
                 if self.norm_mode:                    
                     data = self._normalize(data, self.norm_mode)                          
@@ -428,7 +400,7 @@ class DataGenerator(keras.utils.Sequence):
             X[i, :, :] = data                                       
 
             ## labeling 
-            if 'trace_category' in dataset.attrs and dataset.attrs['trace_category'] == 'earthquake_local': 
+            if dataset.attrs['trace_category'] == 'earthquake_local': 
                 if self.label_type  == 'gaussian': 
                     sd = None    
                     if spt and sst: 
@@ -559,10 +531,9 @@ class DataGenerator(keras.utils.Sequence):
                         if add_sst:
                             y3[i, add_sst-20:add_sst+20, 0] = 1                 
 
-            fl.close() 
+        fl.close() 
                            
         return X, y1.astype('float32'), y2.astype('float32'), y3.astype('float32')
-
 
 
 
