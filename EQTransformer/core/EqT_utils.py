@@ -2966,8 +2966,7 @@ class cred2():
             layer_id=layer_id,
             seq_length=seq_length,
             num_layers=num_layers,
-            vocab_size=vocab_size,
-            name = str(uuid.uuid4())[:8]
+            vocab_size=vocab_size
         )
 
     def __call__(self, inp):
