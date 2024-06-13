@@ -348,14 +348,34 @@ class DataGenerator(keras.utils.Sequence):
             
             timestamp = int(time.time())
             dataset_name = f'data/{ID}_{timestamp}'
-            dataset = fl.require_dataset(dataset_name, shape=data.shape, dtype=data.dtype, data=data)
             
-    
+            if dataset_name in fl:
+                # Dataset already exists, retrieve the existing dataset
+                dataset = fl[dataset_name]
+            else:
+                # Dataset doesn't exist, create a new dataset
+                dataset = fl.create_dataset(dataset_name, shape=data.shape, dtype=data.dtype, data=data)
+            
             if ID.split('_')[-1] == 'EV':
-                spt = int(dataset.attrs['p_arrival_sample'])
-                sst = int(dataset.attrs['s_arrival_sample'])
-                coda_end = int(dataset.attrs['coda_end_sample'])
-                snr = dataset.attrs['snr_db']
+                if 'p_arrival_sample' in dataset.attrs:
+                    spt = int(dataset.attrs['p_arrival_sample'])
+                else:
+                    spt = None  # or set a default value
+            
+                if 's_arrival_sample' in dataset.attrs:
+                    sst = int(dataset.attrs['s_arrival_sample'])
+                else:
+                    sst = None  # or set a default value
+            
+                if 'coda_end_sample' in dataset.attrs:
+                    coda_end = int(dataset.attrs['coda_end_sample'])
+                else:
+                    coda_end = None  # or set a default value
+            
+                if 'snr_db' in dataset.attrs:
+                    snr = dataset.attrs['snr_db']
+                else:
+                    snr = None
     
            
             ## augmentation 
