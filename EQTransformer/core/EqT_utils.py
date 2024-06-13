@@ -3038,7 +3038,7 @@ class cred2():
         model = Model(inputs=inp, outputs=[d, P, S])
         loss_weights=[0.2, 0.3, 0.5]
         loss_types=['binary_crossentropy', 'binary_crossentropy', 'binary_crossentropy']
-        model.compile(loss={'detector_output': loss_types[0],
+        model.compile(loss={'detector': loss_types[0],
                     'picker_P': loss_types[1],
                     'picker_S': loss_types[2]},
               loss_weights={'detector_output': loss_weights[0],
