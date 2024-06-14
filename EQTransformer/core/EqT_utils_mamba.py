@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jul 24 19:16:51 2019
 
-@author: mostafamousavi
-last update: 06/06/2020
-"""
 from __future__ import division, print_function
 import math
 import numpy as np
