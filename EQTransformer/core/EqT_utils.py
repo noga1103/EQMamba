@@ -2916,8 +2916,6 @@ class cred2():
         
     """
 
-    
-class cred2():
 
     
     def __init__(self,
