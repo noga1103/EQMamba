@@ -1648,12 +1648,9 @@ def selective_scan(u, delta, A, B, C, D):
 class MambaBlock(keras.layers.Layer):
     def __init__(self, modelargs, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         self.args = modelargs
-        self.mixer = MambaBlock(modelargs, name=f"mamba_block_{modelargs.layer_id}")
-        self.norm = keras.layers.LayerNormalization(epsilon=1e-5, name=f"layer_norm_{modelargs.layer_id}")
         args = modelargs
-       # self.layer_id = modelargs.layer_id
+        self.layer_id = modelargs.layer_id
         self.in_projection = layers.Dense(
             args.model_internal_dim * 2,
             input_shape=(args.model_input_dims,), use_bias=False,
@@ -1716,11 +1713,12 @@ class MambaBlock(keras.layers.Layer):
         return selective_scan(x, delta, A, B, C, D)
 
 class ResidualBlock(keras.layers.Layer):
+ 
     def __init__(self, modelargs, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.args = modelargs
-        self.mixer = MambaBlock(modelargs)
-        self.norm = keras.layers.LayerNormalization(epsilon=1e-5)
+        self.mixer = MambaBlock(modelargs, name=f"mamba_block_{modelargs.layer_id}")
+        self.norm = keras.layers.LayerNormalization(epsilon=1e-5, name=f"layer_norm_{modelargs.layer_id}")
 
     def call(self, x):
         return self.mixer(self.norm(x)) + x
