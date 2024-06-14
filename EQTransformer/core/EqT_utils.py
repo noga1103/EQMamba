@@ -1648,23 +1648,30 @@ def selective_scan(u, delta, A, B, C, D):
 class MambaBlock(keras.layers.Layer):
     def __init__(self, modelargs, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         self.args = modelargs
+        self.mixer = MambaBlock(modelargs, name=f"mamba_block_{modelargs.layer_id}")
+        self.norm = keras.layers.LayerNormalization(epsilon=1e-5, name=f"layer_norm_{modelargs.layer_id}")
         args = modelargs
-        self.layer_id = modelargs.layer_id
+       # self.layer_id = modelargs.layer_id
         self.in_projection = layers.Dense(
             args.model_internal_dim * 2,
-            input_shape=(args.model_input_dims,), use_bias=False)
+            input_shape=(args.model_input_dims,), use_bias=False,
+            name=f"in_projection_{self.layer_id}")
         self.conv1d = layers.Conv1D(
             filters=args.model_internal_dim,
             use_bias=args.conv_use_bias,
             kernel_size=args.conv_kernel_size,
             groups=args.model_internal_dim,
             data_format='channels_first',
-            padding='causal'
+            padding='causal',
+            name=f"conv1d_{self.layer_id}"
         )
-        self.x_projection = layers.Dense(args.delta_t_rank + args.model_states * 2, use_bias=False)
+        self.x_projection = layers.Dense(args.delta_t_rank + args.model_states * 2, use_bias=False,
+                                         name=f"x_projection_{self.layer_id}")
         self.delta_t_projection = layers.Dense(args.model_internal_dim,
-                                               input_shape=(args.delta_t_rank,), use_bias=False)
+                                               input_shape=(args.delta_t_rank,), use_bias=False,
+                                               name=f"delta_t_projection_{self.layer_id}")
         self.A = tf.repeat(
             tf.range(1, args.model_states+1, dtype=tf.float32),
             args.model_internal_dim, axis=0)  # Updated line
@@ -2993,12 +3000,12 @@ class cred2():
             x = _block_CNN_1(self.nb_filters[6], 3, self.drop_rate, self.activationf, self.padding, x)
             if cb > 2:
                 x = _block_CNN_1(self.nb_filters[6], 2, self.drop_rate, self.activationf, self.padding, x)
-
+    
         for bb in range(self.BiLSTM_blocks):
             x = _block_BiLSTM(self.nb_filters[1], self.drop_rate, self.padding, x)
-
-        x = ResidualBlock(self.model_args)(x)
-        encoded = ResidualBlock(self.model_args)(x)
+    
+        x = ResidualBlock(ModelArgs(layer_id=0))(x)
+        encoded = ResidualBlock(ModelArgs(layer_id=1))(x)
 
         decoder_D = _decoder([i for i in reversed(self.nb_filters)], 
                              [i for i in reversed(self.kernel_size)], 
