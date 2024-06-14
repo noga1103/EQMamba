@@ -28,8 +28,8 @@ import time
 from os import listdir
 import platform
 import shutil
-from .EqT_utils_mamba import DataGeneratorPrediction, picker, generate_arrays_from_file
-from .EqT_utils_mamba import f1, SeqSelfAttention, FeedForward, LayerNormalization
+from .EqT_utils import DataGeneratorPrediction, picker, generate_arrays_from_file
+from .EqT_utils import f1, SeqSelfAttention, FeedForward, LayerNormalization
 from tqdm import tqdm
 from datetime import datetime, timedelta
 import multiprocessing
