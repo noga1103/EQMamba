@@ -221,14 +221,14 @@ def preprocessor(preproc_dir, mseed_dir, stations_json, overlap=0.3, n_processor
                                      
                     tr_name = st1[0].stats.station+'_'+st1[0].stats.network+'_'+st1[0].stats.channel[:2]+'_'+str(start_time)
                   
-                   with h5py.File(os.path.join(save_dir,output_name+'.hdf5'), 'a') as HDF:
-                    if 'data/'+tr_name in HDF:
+                    with h5py.File(os.path.join(save_dir,output_name+'.hdf5'), 'a') as HDF:
+                        if 'data/'+tr_name in HDF:
                     # Dataset already exists, handle accordingly
-                        pass
-                     else:
-                        dsF = HDF.create_dataset('data/'+tr_name, npz_data.shape, data = npz_data, dtype= np.float32)
-        
-                        dsF.attrs["trace_name"] = tr_name
+                            pass
+                         else:
+                            dsF = HDF.create_dataset('data/'+tr_name, npz_data.shape, data = npz_data, dtype= np.float32)
+            
+                            dsF.attrs["trace_name"] = tr_name
 
                        
                     if platform.system() == 'Windows':
