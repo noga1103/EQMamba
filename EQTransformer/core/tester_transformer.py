@@ -23,9 +23,9 @@ import csv
 import h5py
 import time
 import shutil
-from .EqT_utils_mamba import f1, SeqSelfAttention, FeedForward, LayerNormalization
-from .EqT_utils_mamba import generate_arrays_from_file, picker
-from .EqT_utils_mamba import DataGeneratorTest, PreLoadGeneratorTest
+from .EqT_utils_transformer import f1, SeqSelfAttention, FeedForward, LayerNormalization
+from .EqT_utils_transformer import generate_arrays_from_file, picker
+from .EqT_utils_transformer import DataGeneratorTest, PreLoadGeneratorTest
 np.warnings.filterwarnings('ignore')
 import datetime
 from tqdm import tqdm
