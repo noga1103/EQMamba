@@ -266,12 +266,11 @@ def trainer(input_hdf5=None,
             Number of validation samples.  
             
         """    
-
+       save_dir, save_models = _make_dir(args['output_name'])
+       training, validation, test = _split(args, save_dir)
+       callbacks = _make_callback(args, save_models)
+       model = _build_model(args)
         
-        save_dir, save_models=_make_dir(args['output_name'])
-        training, validation, test=_split(args, save_dir)
-        callbacks=_make_callback(args, save_models)
-        model=_build_model(args)
         
         if args['gpuid']:           
             os.environ['CUDA_VISIBLE_DEVICES'] = '{}'.format(gpuid)
@@ -360,10 +359,14 @@ def trainer(input_hdf5=None,
         test_generator = DataGenerator(test, **params_test)
         test_loss, test_detector_loss, test_picker_P_loss, test_picker_S_loss, test_detector_f1, test_picker_P_f1, test_picker_S_f1 = model.evaluate(test_generator)
 
-        return history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, test_loss, test_detector_loss, test_picker_P_loss, test_picker_S_loss, test_detector_f1, test_picker_P_f1, test_picker_S_f1est_picker_S_f1
-                  
-    history, model, start_training, end_training, save_dir, save_models, training_size, validation_size=train(args)  
-    _document_training(history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, args)
+        training_size = len(training)
+        validation_size = len(validation)
+
+        return history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, test_loss, test_detector_loss, test_picker_P_loss, test_picker_S_loss, test_detector_f1, test_picker_P_f1, test_picker_S_f1
+
+history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, test_loss, test_detector_loss, test_picker_P_loss, test_picker_S_loss, test_detector_f1, test_picker_P_f1, test_picker_S_f1 = train(args)
+
+_document_training(history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, len(test), test_loss, test_detector_loss, test_picker_P_loss, test_picker_S_loss, test_detector_f1, test_picker_P_f1, test_picker_S_f1, args)
 
 
 
