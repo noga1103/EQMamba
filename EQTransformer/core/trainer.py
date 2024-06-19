@@ -266,10 +266,10 @@ def trainer(input_hdf5=None,
             Number of validation samples.  
             
         """    
-       save_dir, save_models = _make_dir(args['output_name'])
-       training, validation, test = _split(args, save_dir)
-       callbacks = _make_callback(args, save_models)
-       model = _build_model(args)
+        save_dir, save_models = _make_dir(args['output_name'])
+        training, validation, test = _split(args, save_dir)
+        callbacks = _make_callback(args, save_models)
+        model = _build_model(args)
         
         
         if args['gpuid']:           
