@@ -348,12 +348,19 @@ def trainer(input_hdf5=None,
                                 )            
         else:
             print('Please specify training_mode !', flush=True)
-        end_training = time.time()  
-        
+                    
+        end_training = time.time()
+        params_test = {'file_name': str(args['input_hdf5']),
+                   'dim': args['input_dimention'][0],
+                   'batch_size': args['batch_size'],
+                   'n_channels': args['input_dimention'][-1],
+                   'shuffle': False,
+                   'norm_mode': args['normalization_mode'],
+                   'augmentation': False}
         test_generator = DataGenerator(test, **params_test)
         test_loss, test_detector_loss, test_picker_P_loss, test_picker_S_loss, test_detector_f1, test_picker_P_f1, test_picker_S_f1 = model.evaluate(test_generator)
 
-        return history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, test_loss, test_detector_loss, test_picker_P_loss, test_picker_S_loss, test_detector_f1, test_picker_P_f1, test_picker_S_f1
+        return history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, test_loss, test_detector_loss, test_picker_P_loss, test_picker_S_loss, test_detector_f1, test_picker_P_f1, test_picker_S_f1est_picker_S_f1
                   
     history, model, start_training, end_training, save_dir, save_models, training_size, validation_size=train(args)  
     _document_training(history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, args)
