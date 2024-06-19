@@ -269,7 +269,7 @@ def trainer(input_hdf5=None,
 
         
         save_dir, save_models=_make_dir(args['output_name'])
-        training, validation=_split(args, save_dir)
+        training, validation, test=_split(args, save_dir)
         callbacks=_make_callback(args, save_models)
         model=_build_model(args)
         
@@ -350,7 +350,10 @@ def trainer(input_hdf5=None,
             print('Please specify training_mode !', flush=True)
         end_training = time.time()  
         
-        return history, model, start_training, end_training, save_dir, save_models, len(training), len(validation)
+        test_generator = DataGenerator(test, **params_test)
+        test_loss, test_detector_loss, test_picker_P_loss, test_picker_S_loss, test_detector_f1, test_picker_P_f1, test_picker_S_f1 = model.evaluate(test_generator)
+
+        return history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, test_loss, test_detector_loss, test_picker_P_loss, test_picker_S_loss, test_detector_f1, test_picker_P_f1, test_picker_S_f1
                   
     history, model, start_training, end_training, save_dir, save_models, training_size, validation_size=train(args)  
     _document_training(history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, args)
@@ -460,7 +463,7 @@ def _split(args, save_dir):
                             int(args['train_valid_test_split'][0]*len(ev_list) + args['train_valid_test_split'][1]*len(ev_list))]
     test =  ev_list[ int(args['train_valid_test_split'][0]*len(ev_list) + args['train_valid_test_split'][1]*len(ev_list)):]
     np.save(save_dir+'/test', test)  
-    return training, validation 
+    return training, validation, test 
 
 
 
@@ -692,6 +695,21 @@ def _document_training(history, model, start_training, end_training, save_dir, s
     trainable_count = int(np.sum([K.count_params(p) for p in model.trainable_weights]))
     non_trainable_count = int(np.sum([K.count_params(p) for p in model.non_trainable_weights]))
     
+    ax.plot([len(history.history['loss'])], [test_loss], 'ro', label='test_loss')
+    ax.plot([len(history.history['detector_loss'])], [test_detector_loss], 'bo', label='test_detector_loss')
+    ax.plot([len(history.history['picker_P_loss'])], [test_picker_P_loss], 'go', label='test_picker_P_loss')
+    ax.plot([len(history.history['picker_S_loss'])], [test_picker_S_loss], 'yo', label='test_picker_S_loss')
+    ax.legend()
+
+    ...
+    
+    # Plot the test set performance on the F1 score curve  
+    ax.plot([len(history.history['detector_f1'])], [test_detector_f1], 'ro', label='test_detector_f1')
+    ax.plot([len(history.history['picker_P_f1'])], [test_picker_P_f1], 'bo', label='test_picker_P_f1') 
+    ax.plot([len(history.history['picker_S_f1'])], [test_picker_S_f1], 'go', label='test_picker_S_f1')
+    ax.legend()
+    
+    
     with open(os.path.join(save_dir,'X_report.txt'), 'a') as the_file: 
         the_file.write('================== Overal Info =============================='+'\n')               
         the_file.write('date of report: '+str(datetime.datetime.now())+'\n')         
@@ -745,3 +763,11 @@ def _document_training(history, model, start_training, end_training, save_dir, s
         the_file.write('coda_ratio: '+str(args['coda_ratio'])+'\n')
         the_file.write('scale_amplitude_r: '+str(args['scale_amplitude_r'])+'\n')            
         the_file.write('pre_emphasis: '+str(args['pre_emphasis'])+'\n')
+        the_file.write('================== Test Set Performance =====================\n')
+        the_file.write('test_loss: {}\n'.format(test_loss))
+        the_file.write('test_detector_loss: {}\n'.format(test_detector_loss))   
+        the_file.write('test_picker_P_loss: {}\n'.format(test_picker_P_loss))
+        the_file.write('test_picker_S_loss: {}\n'.format(test_picker_S_loss))
+        the_file.write('test_detector_f1: {}\n'.format(test_detector_f1))
+        the_file.write('test_picker_P_f1: {}\n'.format(test_picker_P_f1))
+        the_file.write('test_picker_S_f1: {}\n'.format(test_picker_S_f1))
