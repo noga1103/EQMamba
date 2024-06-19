@@ -228,7 +228,9 @@ def trainer(input_hdf5=None,
     "gpu_limit": gpu_limit,
     "use_multiprocessing": use_multiprocessing
     }
-                       
+    history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, test_loss, test_detector_loss, test_picker_P_loss, test_picker_S_loss, test_detector_f1, test_picker_P_f1, test_picker_S_f1 = train(args)
+    _document_training(history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, len(test), test_loss, test_detector_loss, test_picker_P_loss, test_picker_S_loss, test_detector_f1, test_picker_P_f1, test_picker_S_f1, args)
+                          
     def train(args):
         """ 
         
@@ -363,10 +365,6 @@ def trainer(input_hdf5=None,
         validation_size = len(validation)
 
         return history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, test_loss, test_detector_loss, test_picker_P_loss, test_picker_S_loss, test_detector_f1, test_picker_P_f1, test_picker_S_f1
-
-history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, test_loss, test_detector_loss, test_picker_P_loss, test_picker_S_loss, test_detector_f1, test_picker_P_f1, test_picker_S_f1 = train(args)
-
-_document_training(history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, len(test), test_loss, test_detector_loss, test_picker_P_loss, test_picker_S_loss, test_detector_f1, test_picker_P_f1, test_picker_S_f1, args)
 
 
 
