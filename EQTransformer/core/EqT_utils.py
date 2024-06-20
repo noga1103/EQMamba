@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Created on Wed Jul 24 19:16:51 2019
 
+@author: mostafamousavi
+last update: 06/06/2020
+"""
 from __future__ import division, print_function
-import math
 import numpy as np
 import h5py
-import uuid
-import time
 import matplotlib
 matplotlib.use('agg')
 from tqdm import tqdm
 import os
 os.environ['KERAS_BACKEND']='tensorflow'
-import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import backend as K
-from tensorflow.keras import layers  
 from tensorflow.keras.layers import add, Activation, LSTM, Conv1D, InputSpec
 from tensorflow.keras.layers import MaxPooling1D, UpSampling1D, Cropping1D, SpatialDropout1D, Bidirectional, BatchNormalization 
 from tensorflow.keras.models import Model
@@ -333,12 +333,8 @@ class DataGenerator(keras.utils.Sequence):
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             additions = None
-            
             dataset = fl.get('data/'+str(ID))
-            if dataset is None:
-                print(f"Dataset 'data/{ID}' not found in the file.")
-                continue
-                  
+
             if ID.split('_')[-1] == 'EV':
                 data = np.array(dataset)                    
                 spt = int(dataset.attrs['p_arrival_sample']);
@@ -533,6 +529,7 @@ class DataGenerator(keras.utils.Sequence):
         fl.close() 
                            
         return X, y1.astype('float32'), y2.astype('float32'), y3.astype('float32')
+
 
 
 
@@ -1293,9 +1290,6 @@ def data_reader( list_IDs,
 
         additions = None
         dataset = fl.get('data/'+str(ID))
-        if dataset is None:
-            print(f"Dataset 'data/{ID}' not found in the file.")
-            continue
         
         if ID.split('_')[-1] == 'EV':            
             data = np.array(dataset)                    
@@ -1607,9 +1601,6 @@ class DataGeneratorTest(keras.utils.Sequence):
                     
             elif ID.split('_')[-1] == 'NO':
                 dataset = fl.get('data/'+str(ID))
-                if dataset is None:
-                    print(f"Dataset 'data/{ID}' not found in the file.")
-                    continue
                 data = np.array(dataset)
           
             if self.norm_mode:                    
@@ -1620,110 +1611,7 @@ class DataGeneratorTest(keras.utils.Sequence):
         fl.close() 
                            
         return X
-        
-def selective_scan(u, delta, A, B, C, D):
-    # first step of A_bar = exp(ΔA), i.e., ΔA
-    dA = tf.einsum('bld,dn->bldn', delta, A)
-    dB_u = tf.einsum('bld,bld,bln->bldn', delta, u, B)
-    dA_cumsum = tf.pad(
-        dA[:, 1:], [[0, 0], [1, 1], [0, 0], [0, 0]])[:, 1:, :, :]
-    dA_cumsum = tf.reverse(dA_cumsum, axis=[1]) # Flip along axis 1
-    # Cumulative sum along all the input tokens, parallel prefix sum,
-    # calculates dA for all the input tokens parallely
-    dA_cumsum = tf.math.cumsum(dA_cumsum, axis=1)
-    # second step of A_bar = exp(ΔA), i.e., exp(ΔA)
-    dA_cumsum = tf.exp(dA_cumsum)
-    dA_cumsum = tf.reverse(dA_cumsum, axis=[1]) # Flip back along axis 1
-    x = dB_u * dA_cumsum
-    # 1e-12 to avoid division by 0
-    x = tf.math.cumsum(x, axis=1)/(dA_cumsum + 1e-12)
-    y = tf.einsum('bldn,bln->bld', x, C)
-    return y + u * D
-    
-class MambaBlock(keras.layers.Layer):
-    def __init__(self, modelargs, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.args = modelargs
-        args = modelargs
-        self.layer_id = modelargs.layer_id
-        self.in_projection = layers.Dense(
-            args.model_internal_dim * 2,
-            input_shape=(args.model_input_dims,), use_bias=False,
-            name=f"in_projection_{self.layer_id}")
-        self.conv1d = layers.Conv1D(
-            filters=args.model_internal_dim,
-            use_bias=args.conv_use_bias,
-            kernel_size=args.conv_kernel_size,
-            groups=args.model_internal_dim,
-            data_format='channels_first',
-            padding='causal',
-            name=f"conv1d_{self.layer_id}"
-        )
-        self.x_projection = layers.Dense(args.delta_t_rank + args.model_states * 2, use_bias=False,
-                                         name=f"x_projection_{self.layer_id}")
-        self.delta_t_projection = layers.Dense(args.model_internal_dim,
-                                               input_shape=(args.delta_t_rank,), use_bias=False,
-                                               name=f"delta_t_projection_{self.layer_id}")
-        self.A = tf.repeat(
-            tf.range(1, args.model_states+1, dtype=tf.float32),
-            args.model_internal_dim, axis=0)  # Updated line
-        self.A = tf.reshape(self.A, (args.model_internal_dim, args.model_states))  # Reshape to match the desired shape
-        self.A_log = tf.Variable(
-            tf.math.log(self.A),
-            trainable=True, dtype=tf.float32,
-            name=f"SSM_A_log_{args.layer_id}")
-        self.D = tf.Variable(
-            np.ones(args.model_internal_dim),
-            trainable=True, dtype=tf.float32,
-            name=f"SSM_D_{args.layer_id}")
-        self.out_projection = layers.Dense(
-            args.model_input_dims,
-            input_shape=(args.model_internal_dim,),
-            use_bias=args.dense_use_bias)
 
-    def call(self, x):
-        batch_size, seq_len, dimension = x.shape
-        x_and_res = self.in_projection(x)
-        x, res = tf.split(x_and_res,
-                          [self.args.model_internal_dim,
-                           self.args.model_internal_dim], axis=-1)
-        x = tf.transpose(x, [0, 2, 1])
-        x = self.conv1d(x)[:, :, :seq_len]
-        x = tf.transpose(x, [0, 2, 1])
-        x = tf.nn.swish(x)
-        y = self.ssm(x)
-        y = y * tf.nn.swish(res)
-        return self.out_projection(y)
-
-    def ssm(self, x):
-        d_in, n = self.A_log.shape
-        A = -tf.exp(tf.cast(self.A_log, tf.float32))
-        D = tf.cast(self.D, tf.float32)
-        x_dbl = self.x_projection(x)
-        delta, B, C = tf.split(
-            x_dbl,
-            num_or_size_splits=[self.args.delta_t_rank, n, n],
-            axis=-1)
-        delta = tf.nn.softplus(self.delta_t_projection(delta))
-        return selective_scan(x, delta, A, B, C, D)
-
-class ResidualBlock(keras.layers.Layer):
- 
-    def __init__(self, modelargs, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.args = modelargs
-        self.mixer = MambaBlock(modelargs, name=f"mamba_block_{modelargs.layer_id}")
-        self.norm = keras.layers.LayerNormalization(epsilon=1e-5, name=f"layer_norm_{modelargs.layer_id}")
-
-    def call(self, x):
-        return self.mixer(self.norm(x)) + x
-
-    def get_config(self):
-        config = super().get_config()
-        config.update({
-            "modelargs": self.args,
-        })
-        return config
 
 
 class DataGeneratorPrediction(keras.utils.Sequence):
@@ -1817,9 +1705,6 @@ class DataGeneratorPrediction(keras.utils.Sequence):
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             dataset = fl.get('data/'+str(ID))
-            if dataset is None:
-                print(f"Dataset 'data/{ID}' not found in the file.")
-                continue
             data = np.array(dataset)                
          
             if self.norm_mode:                    
@@ -2272,61 +2157,7 @@ def normalize(data, mode='std'):
     return data
     
     
-class ModelArgs:
-    def __init__(self,
-                 model_input_dims=16,
-                 model_states=64,
-                 projection_expand_factor=2,
-                 conv_kernel_size=4,
-                 delta_t_min=0.001,
-                 delta_t_max=0.1,
-                 delta_t_scale=0.1,
-                 delta_t_init_floor=1e-4,
-                 conv_use_bias=True,
-                 dense_use_bias=False,
-                 layer_id=-1,
-                 seq_length=6000,
-                 num_layers=5,
-                 vocab_size=None):
-        
-        self.model_input_dims = model_input_dims
-        self.model_states = model_states
-        self.projection_expand_factor = projection_expand_factor
-        self.conv_kernel_size = conv_kernel_size
-        self.delta_t_min = delta_t_min
-        self.delta_t_max = delta_t_max
-        self.delta_t_scale = delta_t_scale
-        self.delta_t_init_floor = delta_t_init_floor
-        self.conv_use_bias = conv_use_bias
-        self.dense_use_bias = dense_use_bias
-        self.layer_id = layer_id
-        self.seq_length = seq_length
-        self.num_layers = num_layers
-        self.vocab_size = vocab_size
-        
-        self.model_internal_dim = int(self.projection_expand_factor * self.model_input_dims)
-        self.delta_t_rank = math.ceil(self.model_input_dims / 16)
-        
-        if self.layer_id == -1:
-            self.layer_id = np.round(np.random.randint(0, 1000), 4)
-    def get_config(self):
-        config = {
-            'model_input_dims': self.model_input_dims,
-            'model_states': self.model_states,
-            'projection_expand_factor': self.projection_expand_factor,
-            'conv_kernel_size': self.conv_kernel_size,
-            'delta_t_min': self.delta_t_min,
-            'delta_t_max': self.delta_t_max,
-            'delta_t_scale': self.delta_t_scale,
-            'delta_t_init_floor': self.delta_t_init_floor,
-            'conv_use_bias': self.conv_use_bias,
-            'dense_use_bias': self.dense_use_bias,
-            'layer_id': self.layer_id,
-            'seq_length': self.seq_length,
-            'num_layers': self.num_layers,
-            'vocab_size': self.vocab_size
-        }
-        return config
+
   
 class LayerNormalization(keras.layers.Layer):
     
@@ -2365,7 +2196,7 @@ class LayerNormalization(keras.layers.Layer):
                  gamma_initializer='ones',
                  beta_initializer='zeros',
                  **kwargs):
-    
+
         super(LayerNormalization, self).__init__(**kwargs)
         self.supports_masking = True
         self.center = center
@@ -2520,7 +2351,7 @@ class FeedForward(keras.layers.Layer):
         return y
 
 
-class SeqSelfAttention(keras.layers.Layer): 
+class SeqSelfAttention(keras.layers.Layer):
     """Layer initialization. modified from https://github.com/CyberZHG
     For additive attention, see: https://arxiv.org/pdf/1806.01264.pdf
     :param units: The dimension of the vectors that used to calculate the attention weights.
@@ -2709,27 +2540,23 @@ class SeqSelfAttention(keras.layers.Layer):
     def _call_additive_emission(self, inputs):
         input_shape = K.shape(inputs)
         batch_size = input_shape[0]
-        input_len = inputs.get_shape().as_list()[1]
-        
-        # Fallback to the dynamic shape if input_len is None
-        if input_len is None:
-            input_len = tf.shape(inputs)[1]
-    
-        # h_{t, t'} = \\tanh(x_t^T W_t + x_{t'}^T W_x + b_h)
+        input_len = input_shape[1]
+
+        # h_{t, t'} = \tanh(x_t^T W_t + x_{t'}^T W_x + b_h)
         q = K.expand_dims(K.dot(inputs, self.Wt), 2)
         k = K.expand_dims(K.dot(inputs, self.Wx), 1)
         if self.use_additive_bias:
             h = K.tanh(q + k + self.bh)
         else:
             h = K.tanh(q + k)
-    
+
         # e_{t, t'} = W_a h_{t, t'} + b_a
         if self.use_attention_bias:
-            e = K.reshape(K.dot(h, self.Wa) + self.ba, (batch_size, input_len, input_len))
+            e = K.reshape(K.dot(h, self.Wa) + self.ba, (-1, input_len, input_len))
         else:
-            e = K.reshape(K.dot(h, self.Wa), (batch_size, input_len, input_len))
+            e = K.reshape(K.dot(h, self.Wa), (-1, input_len, input_len))
         return e
-        
+    
     def _call_multiplicative_emission(self, inputs):
         # e_{t, t'} = x_t^T W_a x_{t'} + b_a
         e = K.batch_dot(K.dot(inputs, self.Wa), K.permute_dimensions(inputs, (0, 2, 1)))
@@ -2916,8 +2743,6 @@ class cred2():
         
     """
 
-
-    
     def __init__(self,
                  nb_filters=[8, 16, 16, 32, 32, 96, 96, 128],
                  kernel_size=[11, 9, 7, 7, 5, 5, 3, 3],
@@ -2932,21 +2757,8 @@ class cred2():
                  loss_types=['binary_crossentropy', 'binary_crossentropy', 'binary_crossentropy'],                                 
                  kernel_regularizer=keras.regularizers.l1(1e-4),
                  bias_regularizer=keras.regularizers.l1(1e-4),
-                 model_input_dims=16,
-                 model_states=64,
-                 projection_expand_factor=2,
-                 conv_kernel_size=4,
-                 delta_t_min=0.001,
-                 delta_t_max=0.1,
-                 delta_t_scale=0.1,
-                 delta_t_init_floor=1e-4,
-                 conv_use_bias=True,
-                 dense_use_bias=False,
-                 layer_id=-1,
-                 seq_length=6000,
-                 num_layers=5,
-                 vocab_size=None):
-
+                 ):
+        
         self.kernel_size = kernel_size
         self.nb_filters = nb_filters
         self.padding = padding
@@ -2957,27 +2769,13 @@ class cred2():
         self.BiLSTM_blocks= BiLSTM_blocks     
         self.drop_rate= drop_rate
         self.loss_weights= loss_weights  
-        self.loss_types = ['binary_crossentropy', 'binary_crossentropy', 'binary_crossentropy']
+        self.loss_types = loss_types       
         self.kernel_regularizer = kernel_regularizer     
         self.bias_regularizer = bias_regularizer 
-        self.model_args = ModelArgs(
-            model_input_dims=model_input_dims,
-            model_states=model_states,
-            projection_expand_factor=projection_expand_factor,
-            conv_kernel_size=conv_kernel_size,
-            delta_t_min=delta_t_min,
-            delta_t_max=delta_t_max,
-            delta_t_scale=delta_t_scale,
-            delta_t_init_floor=delta_t_init_floor,
-            conv_use_bias=conv_use_bias,
-            dense_use_bias=dense_use_bias,
-            layer_id=layer_id,
-            seq_length=seq_length,
-            num_layers=num_layers,
-            vocab_size=vocab_size
-        )
 
+        
     def __call__(self, inp):
+
         x = inp
         x = _encoder(self.nb_filters, 
                     self.kernel_size, 
@@ -2993,13 +2791,14 @@ class cred2():
             x = _block_CNN_1(self.nb_filters[6], 3, self.drop_rate, self.activationf, self.padding, x)
             if cb > 2:
                 x = _block_CNN_1(self.nb_filters[6], 2, self.drop_rate, self.activationf, self.padding, x)
-    
+
         for bb in range(self.BiLSTM_blocks):
             x = _block_BiLSTM(self.nb_filters[1], self.drop_rate, self.padding, x)
-    
-        x = ResidualBlock(ModelArgs(layer_id=0))(x)
-        encoded = ResidualBlock(ModelArgs(layer_id=1))(x)
 
+            
+        x, weightdD0 = _transformer(self.drop_rate, None, 'attentionD0', x)             
+        encoded, weightdD = _transformer(self.drop_rate, None, 'attentionD', x)             
+            
         decoder_D = _decoder([i for i in reversed(self.nb_filters)], 
                              [i for i in reversed(self.kernel_size)], 
                              self.decoder_depth, 
@@ -3009,10 +2808,13 @@ class cred2():
                              self.activationf, 
                              self.padding,                             
                              encoded)
-        d = Conv1D(1, 11, padding=self.padding, activation='sigmoid', name='detector')(decoder_D)
+        d = Conv1D(1, 11, padding = self.padding, activation='sigmoid', name='detector')(decoder_D)
 
-        PLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=0, recurrent_dropout=0, activation='tanh', recurrent_activation='sigmoid', unroll=False, name='PLSTM_layer')(encoded)
-        norm_layerP, weightdP = SeqSelfAttention(return_attention=True, attention_width=3, name='attention_P_layer')(PLSTM)
+
+        PLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=self.drop_rate, recurrent_dropout=self.drop_rate)(encoded)
+        norm_layerP, weightdP = SeqSelfAttention(return_attention=True,
+                                                 attention_width= 3,
+                                                 name='attentionP')(PLSTM)
         
         decoder_P = _decoder([i for i in reversed(self.nb_filters)], 
                             [i for i in reversed(self.kernel_size)], 
@@ -3024,12 +2826,13 @@ class cred2():
                             self.padding,                            
                             norm_layerP)
         P = Conv1D(1, 11, padding = self.padding, activation='sigmoid', name='picker_P')(decoder_P)
-
-        SLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=0, recurrent_dropout=0,activation='tanh', recurrent_activation='sigmoid', unroll=False)(encoded)
+        
+        SLSTM = LSTM(self.nb_filters[1], return_sequences=True, dropout=self.drop_rate, recurrent_dropout=self.drop_rate)(encoded) 
         norm_layerS, weightdS = SeqSelfAttention(return_attention=True,
-                                                 attention_width=3,
+                                                 attention_width= 3,
                                                  name='attentionS')(SLSTM)
-
+        
+        
         decoder_S = _decoder([i for i in reversed(self.nb_filters)], 
                             [i for i in reversed(self.kernel_size)],
                             self.decoder_depth, 
@@ -3039,27 +2842,15 @@ class cred2():
                             self.activationf, 
                             self.padding,                            
                             norm_layerS) 
-
+        
         S = Conv1D(1, 11, padding = self.padding, activation='sigmoid', name='picker_S')(decoder_S)
-
-      
+        
 
         model = Model(inputs=inp, outputs=[d, P, S])
-        loss_weights=[0.2, 0.3, 0.5]
-        loss_types=['binary_crossentropy', 'binary_crossentropy', 'binary_crossentropy']
-        print(loss_weights)
-        print(self.loss_types)
-        model.compile(loss={'detector': self.loss_types[0],
-                    'picker_P': self.loss_types[1],
-                    'picker_S': self.loss_types[2]},
-              loss_weights={'detector': self.loss_weights[0],
-                            'picker_P': self.loss_weights[1],
-                            'picker_S': self.loss_weights[2]},
-              optimizer=Adam(lr=_lr_schedule(0)),
-              metrics={'detector': f1,
-                       'picker_P': f1,
-                       'picker_S': f1})
-        
+
+        model.compile(loss=self.loss_types, loss_weights=self.loss_weights,    
+            optimizer=Adam(lr=_lr_schedule(0)), metrics=[f1])
+
         return model
 
         
