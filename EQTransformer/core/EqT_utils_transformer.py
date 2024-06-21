@@ -2688,8 +2688,25 @@ def _lr_schedule(epoch):
     print('Learning rate: ', lr)
     return lr
 
+#this class is not really used in this code, I'm just putting here for tester.py will be the same for both Mamba and Transformer Eqt_Utils
+class ResidualBlock(keras.layers.Layer):
+ 
+    def __init__(self, modelargs, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.args = modelargs
+        self.mixer = MambaBlock(modelargs, name=f"mamba_block_{modelargs.layer_id}")
+        self.norm = keras.layers.LayerNormalization(epsilon=1e-5, name=f"layer_norm_{modelargs.layer_id}")
 
+    def call(self, x):
+        return self.mixer(self.norm(x)) + x
 
+    def get_config(self):
+        config = super().get_config()
+        config.update({
+            "modelargs": self.args,
+        })
+        return config
+        
 class cred2():
     
     """ 
