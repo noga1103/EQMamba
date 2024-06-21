@@ -30,4 +30,4 @@ Mamba: Linear-Time Sequence Modeling with Selective State Spaces (Gu et al., 202
 
 ## Contact
 Noga Bregman - nogabregman@mail.tau.ac.il
-Project Link: https://github.com/noga1103/EQMamba
+
