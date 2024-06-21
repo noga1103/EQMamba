@@ -26,6 +26,7 @@ import shutil
 from .EqT_utils import f1, SeqSelfAttention, FeedForward, LayerNormalization
 from .EqT_utils import generate_arrays_from_file, picker
 from .EqT_utils import DataGeneratorTest, PreLoadGeneratorTest
+from .EqT_utils import ResidualBlock, ModelArgs
 np.warnings.filterwarnings('ignore')
 import datetime
 from tqdm import tqdm
@@ -174,16 +175,19 @@ def tester(input_hdf5=None,
     test = np.load(args['input_testset'])
     
     print('Loading the model ...', flush=True)        
-    model = load_model(args['input_model'], custom_objects={'SeqSelfAttention': SeqSelfAttention, 
-                                                         'FeedForward': FeedForward,
-                                                         'LayerNormalization': LayerNormalization, 
-                                                         'f1': f1                                                                            
-                                                         })
+    model = load_model(args['input_model'], custom_objects={
+    'SeqSelfAttention': SeqSelfAttention, 
+    'FeedForward': FeedForward,
+    'LayerNormalization': LayerNormalization, 
+    'f1': f1,
+    'ResidualBlock': ResidualBlock,
+    'ModelArgs': ModelArgs})
                 
     model.compile(loss = args['loss_types'],
                   loss_weights =  args['loss_weights'],           
                   optimizer = Adam(lr = 0.001),
                   metrics = [f1])
+                      
     
     print('Loading is complete!', flush=True)  
     print('Testing ...', flush=True)    
