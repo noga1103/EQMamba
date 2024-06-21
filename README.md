@@ -12,7 +12,6 @@ EQMamba is an innovative method for simultaneous earthquake detection and seismi
 - Data augmentation techniques for improved model robustness
 - Trained on the STEAD (STanford EArthquake Dataset) for wide applicability
 
-## Try it yourself 
 
 ## Try it yourself
 
