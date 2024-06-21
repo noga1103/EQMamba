@@ -14,8 +14,14 @@ EQMamba is an innovative method for simultaneous earthquake detection and seismi
 
 ## Try it yourself 
 
-For a complete workflow, you can use the provided Google Colab notebook. This notebook will guide you through the process of training and testing the model.
-The notebook runs both on small dataset that can be found in this git, but also on large STEAD dataset that is imported from google drive. If you like to download the dataset yourself you can find it here: https://github.com/smousavi05/STEAD 
+## Try it yourself
+
+For a complete workflow, you can use the provided [Google Colab notebook](https://colab.research.google.com/drive/1xPcfK0skawQ5xAqkaAWt99sYw5IP7izt?usp=sharing). This notebook will guide you through the process of training and testing the model. The notebook runs on both:
+
+1. A small dataset that can be found in this repository
+2. The large STEAD dataset that is imported from Google Drive
+
+If you'd like to download the STEAD dataset yourself, you can find it here: [STEAD Dataset](https://github.com/smousavi05/STEAD)
 
 ## Acknowledgments
 
