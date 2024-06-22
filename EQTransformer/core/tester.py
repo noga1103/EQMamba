@@ -26,7 +26,7 @@ import shutil
 from .EqT_utils import f1, SeqSelfAttention, FeedForward, LayerNormalization
 from .EqT_utils import generate_arrays_from_file, picker
 from .EqT_utils import DataGeneratorTest, PreLoadGeneratorTest
-from .EqT_utils import ResidualBlock, ModelArgs
+#from .EqT_utils import ResidualBlock, ModelArgs
 np.warnings.filterwarnings('ignore')
 import datetime
 from tqdm import tqdm
