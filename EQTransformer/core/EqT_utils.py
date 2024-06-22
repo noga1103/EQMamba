@@ -333,8 +333,12 @@ class DataGenerator(keras.utils.Sequence):
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             additions = None
+            
             dataset = fl.get('data/'+str(ID))
-
+            if dataset is None:
+                print(f"Dataset 'data/{ID}' not found in the file.")
+                continue
+                  
             if ID.split('_')[-1] == 'EV':
                 data = np.array(dataset)                    
                 spt = int(dataset.attrs['p_arrival_sample']);
@@ -529,7 +533,6 @@ class DataGenerator(keras.utils.Sequence):
         fl.close() 
                            
         return X, y1.astype('float32'), y2.astype('float32'), y3.astype('float32')
-
 
 
 
