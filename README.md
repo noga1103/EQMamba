@@ -24,9 +24,9 @@ If you'd like to download the STEAD dataset yourself, you can find it here: [STE
 
 ## Acknowledgments
 
-STEAD dataset (Mousavi et al., 2019)
-EQTransformer (Mousavi et al., 2020)
-Mamba: Linear-Time Sequence Modeling with Selective State Spaces (Gu et al., 2023)
+- STEAD dataset (Mousavi et al., 2019)
+- EQTransformer (Mousavi et al., 2020)
+- Mamba: Linear-Time Sequence Modeling with Selective State Spaces (Gu et al., 2023)
 
 ## Contact
 Noga Bregman - nogabregman@mail.tau.ac.il
